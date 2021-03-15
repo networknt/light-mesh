@@ -1,0 +1,13 @@
+<component name="libraryTable">
+  <library name="Maven: com.networknt:health:2.0.25-SNAPSHOT">
+    <CLASSES>
+      <root url="jar://$MAVEN_REPOSITORY$/com/networknt/health/2.0.25-SNAPSHOT/health-2.0.25-SNAPSHOT.jar!/" />
+    </CLASSES>
+    <JAVADOC>
+      <root url="jar://$MAVEN_REPOSITORY$/com/networknt/health/2.0.25-SNAPSHOT/health-2.0.25-SNAPSHOT-javadoc.jar!/" />
+    </JAVADOC>
+    <SOURCES>
+      <root url="jar://$MAVEN_REPOSITORY$/com/networknt/health/2.0.25-SNAPSHOT/health-2.0.25-SNAPSHOT-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>
