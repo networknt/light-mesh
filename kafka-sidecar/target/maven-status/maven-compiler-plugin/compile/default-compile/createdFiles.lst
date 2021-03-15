@@ -1,8 +1,0 @@
-com/networknt/proxy/ProxyConfig.class
-com/networknt/proxy/ProxyHandlerProvider$ThrowingConsumer.class
-com/networknt/proxy/tableau/TableauConfig.class
-com/networknt/proxy/tableau/TableauSimpleAuthHandler$1.class
-com/networknt/proxy/ProxyHandlerProvider.class
-com/networknt/proxy/tableau/TableauSimpleAuthHandler.class
-com/networknt/proxy/ProxyServerInfoHandler.class
-com/networknt/proxy/LightProxyHandler.class

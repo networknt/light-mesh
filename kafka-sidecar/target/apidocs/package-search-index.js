@@ -1,1 +1,0 @@
-packageSearchIndex = [{"l":"All Packages","url":"allpackages-index.html"},{"l":"com.networknt.proxy"},{"l":"com.networknt.proxy.tableau"}]
