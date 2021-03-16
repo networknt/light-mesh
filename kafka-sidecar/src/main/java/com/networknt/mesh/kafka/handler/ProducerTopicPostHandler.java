@@ -114,14 +114,11 @@ public class ProducerTopicPostHandler implements LightHttpHandler {
 
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-        if(logger.isDebugEnabled()) logger.debug("ProducerTopicPostHandler start");
         // the topic is the path parameter, so it is required and cannot be null.
         String topic = exchange.getQueryParameters().get("topic").getFirst();
-        logger.info("topic: " + topic);
-        // multiple messages in a list.
+        if(logger.isDebugEnabled()) logger.debug("ProducerTopicPostHandler handleRequest start with topic " + topic);
         exchange.dispatch();
         Map<String, Object> map = (Map)exchange.getAttachment(BodyHandler.REQUEST_BODY);
-        System.out.println("map = " + JsonMapper.toJson(map));
         ProduceRequest produceRequest = Config.getInstance().getMapper().convertValue(map, ProduceRequest.class);
         Headers headers = populateHeaders(exchange, config, topic);
         CompletableFuture<ProduceResponse> responseFuture =
@@ -335,9 +332,9 @@ public class ProducerTopicPostHandler implements LightHttpHandler {
     public Headers populateHeaders(HttpServerExchange exchange, KafkaProducerConfig config, String topic) {
         Headers headers = new RecordHeaders();
         String token = exchange.getRequestHeaders().getFirst(Constants.AUTHORIZATION_STRING);
-        //if(token != null) {
+        if(token != null) {
             headers.add(Constants.AUTHORIZATION_STRING, token.getBytes(StandardCharsets.UTF_8));
-        //}
+        }
         if(config.isInjectOpenTracing()) {
             Tracer tracer = exchange.getAttachment(AttachmentConstants.EXCHANGE_TRACER);
             if(tracer != null && tracer.activeSpan() != null) {
