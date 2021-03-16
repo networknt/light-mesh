@@ -86,7 +86,7 @@ public class ProducerTopicPostHandler implements LightHttpHandler {
 
     }
 
-
+    /*
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
         if(logger.isDebugEnabled()) logger.debug("ProducerTopicPostHandler start");
@@ -103,13 +103,15 @@ public class ProducerTopicPostHandler implements LightHttpHandler {
             CompletableFuture<ProduceResponse> responseFuture =
                     produceWithSchema(produceRequest.getFormat(), topic, Optional.empty(), produceRequest, headers);
             responseFuture.whenCompleteAsync((response, throwable) -> {
+                System.out.println(response);
+                System.out.println(throwable);
                 exchange.getResponseHeaders().put(io.undertow.util.Headers.CONTENT_TYPE, "application/json");
                 exchange.getResponseSender().send(JsonMapper.toJson(response));
             });
         });
     }
-    /*
-    working
+     */
+
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
         if(logger.isDebugEnabled()) logger.debug("ProducerTopicPostHandler start");
@@ -121,14 +123,15 @@ public class ProducerTopicPostHandler implements LightHttpHandler {
         Map<String, Object> map = (Map)exchange.getAttachment(BodyHandler.REQUEST_BODY);
         System.out.println("map = " + JsonMapper.toJson(map));
         ProduceRequest produceRequest = Config.getInstance().getMapper().convertValue(map, ProduceRequest.class);
+        Headers headers = populateHeaders(exchange, config, topic);
         CompletableFuture<ProduceResponse> responseFuture =
-                produceWithSchema(produceRequest.getFormat(), topic, Optional.empty(), produceRequest);
+                produceWithSchema(produceRequest.getFormat(), topic, Optional.empty(), produceRequest, headers);
         responseFuture.whenCompleteAsync((response, throwable) -> {
-            exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "application/json");
+            exchange.getResponseHeaders().put(io.undertow.util.Headers.CONTENT_TYPE, "application/json");
             exchange.getResponseSender().send(JsonMapper.toJson(response));
         });
     }
-    */
+
     /*
     working
     @Override
@@ -332,9 +335,9 @@ public class ProducerTopicPostHandler implements LightHttpHandler {
     public Headers populateHeaders(HttpServerExchange exchange, KafkaProducerConfig config, String topic) {
         Headers headers = new RecordHeaders();
         String token = exchange.getRequestHeaders().getFirst(Constants.AUTHORIZATION_STRING);
-        if(token != null) {
+        //if(token != null) {
             headers.add(Constants.AUTHORIZATION_STRING, token.getBytes(StandardCharsets.UTF_8));
-        }
+        //}
         if(config.isInjectOpenTracing()) {
             Tracer tracer = exchange.getAttachment(AttachmentConstants.EXCHANGE_TRACER);
             if(tracer != null && tracer.activeSpan() != null) {
