@@ -13,3 +13,5 @@ autoOffsetreset: earliest
 enableAutoCommit: true
 bootstrapServers: localhost:9092
 enableIdempotence: ${kafka-producer.enableIdempotence:true}
+injectOpenTracing: false
+injectCallerId: true

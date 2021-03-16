@@ -1,26 +1,40 @@
 package com.networknt.mesh.kafka.handler;
 
 import com.fasterxml.jackson.databind.node.NullNode;
+import com.google.protobuf.ByteString;
 import com.networknt.body.BodyHandler;
 import com.networknt.config.Config;
 import com.networknt.config.JsonMapper;
 import com.networknt.handler.LightHttpHandler;
+import com.networknt.httpstring.AttachmentConstants;
+import com.networknt.httpstring.HttpStringConstants;
+import com.networknt.kafka.common.KafkaProducerConfig;
 import com.networknt.kafka.producer.*;
+import com.networknt.mesh.kafka.ProducerStartupHook;
+import com.networknt.service.SingletonServiceFactory;
+import com.networknt.utility.Constants;
 import io.confluent.kafka.schemaregistry.avro.AvroSchemaProvider;
 import io.confluent.kafka.schemaregistry.client.CachedSchemaRegistryClient;
 import io.confluent.kafka.schemaregistry.client.SchemaRegistryClient;
 import io.confluent.kafka.schemaregistry.json.JsonSchemaProvider;
 import io.confluent.kafka.schemaregistry.protobuf.ProtobufSchemaProvider;
 import io.confluent.kafka.serializers.subject.TopicNameStrategy;
+import io.opentracing.Tracer;
+import io.opentracing.propagation.Format;
+import io.opentracing.tag.Tags;
 import io.undertow.server.HttpServerExchange;
-import io.undertow.util.Headers;
+import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.KafkaException;
 import org.apache.kafka.common.errors.AuthenticationException;
 import org.apache.kafka.common.errors.AuthorizationException;
 import org.apache.kafka.common.errors.RetriableException;
+import org.apache.kafka.common.header.Headers;
+import org.apache.kafka.common.header.internals.RecordHeader;
+import org.apache.kafka.common.header.internals.RecordHeaders;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -46,7 +60,8 @@ public class ProducerTopicPostHandler implements LightHttpHandler {
 
     private final SchemaManager schemaManager;
     private final SchemaRecordSerializer recordSerializer;
-    private final ProducerTopicPostService producerService;
+    private String callerId = "unknown";
+    private KafkaProducerConfig config;
 
     public ProducerTopicPostHandler() {
         SchemaRegistryClient schemaRegistryClient = new CachedSchemaRegistryClient(
@@ -60,7 +75,15 @@ public class ProducerTopicPostHandler implements LightHttpHandler {
         configs.put("schema.registry.url", "http://localhost:8081");
         recordSerializer = new SchemaRecordSerializer(schemaRegistryClient,configs, configs, configs);
         schemaManager = new SchemaManagerImpl(schemaRegistryClient, new TopicNameStrategy());
-        producerService = new ProducerTopicPostService();
+        SidecarProducer lightProducer = (SidecarProducer) SingletonServiceFactory.getBean(NativeLightProducer.class);
+        config = lightProducer.config;
+        if(config.isInjectCallerId()) {
+            Map<String, Object> serverConfig = Config.getInstance().getJsonMapConfigNoCache("server");
+            if(serverConfig != null) {
+                callerId = (String)serverConfig.get("serviceId");
+            }
+        }
+
     }
 
 
@@ -75,10 +98,12 @@ public class ProducerTopicPostHandler implements LightHttpHandler {
             Map<String, Object> map = (Map)exchange.getAttachment(BodyHandler.REQUEST_BODY);
             System.out.println("map = " + JsonMapper.toJson(map));
             ProduceRequest produceRequest = Config.getInstance().getMapper().convertValue(map, ProduceRequest.class);
+            // populate the headers from HTTP headers.
+            Headers headers = populateHeaders(exchange, config, topic);
             CompletableFuture<ProduceResponse> responseFuture =
-                    produceWithSchema(produceRequest.getFormat(), topic, Optional.empty(), produceRequest);
+                    produceWithSchema(produceRequest.getFormat(), topic, Optional.empty(), produceRequest, headers);
             responseFuture.whenCompleteAsync((response, throwable) -> {
-                exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "application/json");
+                exchange.getResponseHeaders().put(io.undertow.util.Headers.CONTENT_TYPE, "application/json");
                 exchange.getResponseSender().send(JsonMapper.toJson(response));
             });
         });
@@ -129,7 +154,8 @@ public class ProducerTopicPostHandler implements LightHttpHandler {
             EmbeddedFormat format,
             String topicName,
             Optional<Integer> partition,
-            ProduceRequest request) {
+            ProduceRequest request,
+            Headers headers) {
         List<SerializedKeyAndValue> serialized =
                 serialize(
                         format,
@@ -139,7 +165,7 @@ public class ProducerTopicPostHandler implements LightHttpHandler {
                         /* valueSchema= */ Optional.empty(),
                         request.getRecords());
 
-        List<CompletableFuture<ProduceResult>> resultFutures = doProduce(topicName, serialized);
+        List<CompletableFuture<ProduceResult>> resultFutures = doProduce(topicName, serialized, headers);
 
         return produceResultsToResponse(
                 /* keySchema= */ Optional.empty(), /* valueSchema= */ Optional.empty(), resultFutures);
@@ -150,7 +176,8 @@ public class ProducerTopicPostHandler implements LightHttpHandler {
             EmbeddedFormat format,
             String topicName,
             Optional<Integer> partition,
-            ProduceRequest request) {
+            ProduceRequest request,
+            Headers headers) {
         Optional<RegisteredSchema> keySchema =
                 getSchema(
                         format,
@@ -175,7 +202,7 @@ public class ProducerTopicPostHandler implements LightHttpHandler {
                         valueSchema,
                         request.getRecords());
 
-        List<CompletableFuture<ProduceResult>> resultFutures = doProduce(topicName, serialized);
+        List<CompletableFuture<ProduceResult>> resultFutures = doProduce(topicName, serialized, headers);
 
         return produceResultsToResponse(keySchema, valueSchema, resultFutures);
     }
@@ -233,18 +260,16 @@ public class ProducerTopicPostHandler implements LightHttpHandler {
     }
 
     private List<CompletableFuture<ProduceResult>> doProduce(
-            String topicName, List<SerializedKeyAndValue> serialized) {
+            String topicName, List<SerializedKeyAndValue> serialized, Headers headers) {
         return serialized.stream()
                 .map(
-                        record ->
-                                producerService
-                                        .produce(
-                                                topicName,
-                                                record.getPartitionId(),
-                                                /* headers= */ Map.of(),
-                                                record.getKey(),
-                                                record.getValue(),
-                                                /* timestamp= */ Instant.now()))
+                        record -> produce(
+                                topicName,
+                                record.getPartitionId(),
+                                headers,
+                                record.getKey(),
+                                record.getValue(),
+                                /* timestamp= */ Instant.now()))
                 .collect(Collectors.toList());
     }
 
@@ -302,6 +327,60 @@ public class ProducerTopicPostHandler implements LightHttpHandler {
             logger.error("Unexpected Producer Exception", e);
             throw new RuntimeException("Unexpected Producer Exception", e);
         }
+    }
+
+    public Headers populateHeaders(HttpServerExchange exchange, KafkaProducerConfig config, String topic) {
+        Headers headers = new RecordHeaders();
+        String token = exchange.getRequestHeaders().getFirst(Constants.AUTHORIZATION_STRING);
+        if(token != null) {
+            headers.add(Constants.AUTHORIZATION_STRING, token.getBytes(StandardCharsets.UTF_8));
+        }
+        if(config.isInjectOpenTracing()) {
+            Tracer tracer = exchange.getAttachment(AttachmentConstants.EXCHANGE_TRACER);
+            if(tracer != null && tracer.activeSpan() != null) {
+                Tags.SPAN_KIND.set(tracer.activeSpan(), Tags.SPAN_KIND_PRODUCER);
+                Tags.MESSAGE_BUS_DESTINATION.set(tracer.activeSpan(), topic);
+                tracer.inject(tracer.activeSpan().context(), Format.Builtin.TEXT_MAP, new KafkaHeadersCarrier(headers));
+            }
+        } else {
+            String cid = exchange.getRequestHeaders().getFirst(HttpStringConstants.CORRELATION_ID);
+            headers.add(Constants.CORRELATION_ID_STRING, cid.getBytes(StandardCharsets.UTF_8));
+            String tid = exchange.getRequestHeaders().getFirst(HttpStringConstants.TRACEABILITY_ID);
+            if(tid != null) {
+                headers.add(Constants.TRACEABILITY_ID_STRING, tid.getBytes(StandardCharsets.UTF_8));
+            }
+        }
+        if(config.isInjectCallerId()) {
+            headers.add(Constants.CALLER_ID_STRING, callerId.getBytes(StandardCharsets.UTF_8));
+        }
+        return headers;
+    }
+
+    public CompletableFuture<ProduceResult> produce(
+            String topicName,
+            Optional<Integer> partitionId,
+            Headers headers,
+            Optional<ByteString> key,
+            Optional<ByteString> value,
+            Instant timestamp
+    ) {
+        CompletableFuture<ProduceResult> result = new CompletableFuture<>();
+        ProducerStartupHook.producer.send(
+                new ProducerRecord<>(
+                        topicName,
+                        partitionId.orElse(null),
+                        timestamp.toEpochMilli(),
+                        key.map(ByteString::toByteArray).orElse(null),
+                        value.map(ByteString::toByteArray).orElse(null),
+                        headers),
+                (metadata, exception) -> {
+                    if (exception != null) {
+                        result.completeExceptionally(exception);
+                    } else {
+                        result.complete(ProduceResult.fromRecordMetadata(metadata));
+                    }
+                });
+        return result;
     }
 
 }
