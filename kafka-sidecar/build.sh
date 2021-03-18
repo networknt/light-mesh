@@ -12,7 +12,7 @@
 set -ex
 
 VERSION=$1
-IMAGE_NAME="networknt/light-proxy"
+IMAGE_NAME="networknt/com.networknt.kafka-sidecar-1.0.0"
 
 showHelp() {
     echo " "
@@ -22,7 +22,7 @@ showHelp() {
     echo " "
     echo "    where [VERSION] version of the docker image that you want to publish (example: 0.0.1)"
     echo " "
-    echo "    example 1: ./build.sh 0.0.1"
+    echo "    example: ./build.sh 0.0.1"
     echo " "
 }
 

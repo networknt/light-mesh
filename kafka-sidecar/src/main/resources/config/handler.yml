@@ -64,8 +64,20 @@ handlers:
   - com.networknt.specification.SpecSwaggerUIHandler@swaggerui
   # - com.networknt.metrics.prometheus.PrometheusGetHandler@getprometheus
   # Business Handlers
-  - com.networknt.mesh.kafka.handler.ProducerTopicPostHandler
-  - com.networknt.mesh.kafka.handler.ConsumerTopicGetHandler
+  - com.networknt.mesh.kafka.handler.ProducersTopicPostHandler
+  - com.networknt.mesh.kafka.handler.ConsumersGroupPostHandler
+  - com.networknt.mesh.kafka.handler.ConsumersGroupInstancesInstanceDeleteHandler
+  - com.networknt.mesh.kafka.handler.ConsumersGroupInstancesInstanceOffsetsPostHandler
+  - com.networknt.mesh.kafka.handler.ConsumersGroupInstancesInstanceOffsetsPutHandler
+  - com.networknt.mesh.kafka.handler.ConsumersGroupInstancesInstanceSubscriptionsPostHandler
+  - com.networknt.mesh.kafka.handler.ConsumersGroupInstancesInstanceSubscriptionsGetHandler
+  - com.networknt.mesh.kafka.handler.ConsumersGroupInstancesInstanceSubscriptionsDeleteHandler
+  - com.networknt.mesh.kafka.handler.ConsumersGroupInstancesInstanceAssignmentsPostHandler
+  - com.networknt.mesh.kafka.handler.ConsumersGroupInstancesInstanceAssignmentsGetHandler
+  - com.networknt.mesh.kafka.handler.ConsumersGroupInstancesInstancePositionsPostHandler
+  - com.networknt.mesh.kafka.handler.ConsumersGroupInstancesInstancePositionsFirstPostHandler
+  - com.networknt.mesh.kafka.handler.ConsumersGroupInstancesInstancePositionsLastPostHandler
+  - com.networknt.mesh.kafka.handler.ConsumersGroupInstancesInstanceRecordsGetHandler
 
 
 chains:
@@ -76,23 +88,83 @@ chains:
     - correlation 
     - specification
     - security
-    - body
+    - body 
     - audit
     # - dump
     - sanitizer
     - validator
 
 paths:
-  - path: '/producer/{topic}'
+  - path: '/producers/{topic}'
     method: 'POST'
     exec:
       - default
-      - com.networknt.mesh.kafka.handler.ProducerTopicPostHandler
-  - path: '/consumer/{topic}'
+      - com.networknt.mesh.kafka.handler.ProducersTopicPostHandler
+  - path: '/consumers/{group}'
+    method: 'POST'
+    exec:
+      - default
+      - com.networknt.mesh.kafka.handler.ConsumersGroupPostHandler
+  - path: '/consumers/{group}/instances/{instance}'
+    method: 'DELETE'
+    exec:
+      - default
+      - com.networknt.mesh.kafka.handler.ConsumersGroupInstancesInstanceDeleteHandler
+  - path: '/consumers/{group}/instances/{instance}/offsets'
+    method: 'POST'
+    exec:
+      - default
+      - com.networknt.mesh.kafka.handler.ConsumersGroupInstancesInstanceOffsetsPostHandler
+  - path: '/consumers/{group}/instances/{instance}/offsets'
+    method: 'PUT'
+    exec:
+      - default
+      - com.networknt.mesh.kafka.handler.ConsumersGroupInstancesInstanceOffsetsPutHandler
+  - path: '/consumers/{group}/instances/{instance}/subscriptions'
+    method: 'POST'
+    exec:
+      - default
+      - com.networknt.mesh.kafka.handler.ConsumersGroupInstancesInstanceSubscriptionsPostHandler
+  - path: '/consumers/{group}/instances/{instance}/subscriptions'
     method: 'GET'
     exec:
       - default
-      - com.networknt.mesh.kafka.handler.ConsumerTopicGetHandler
+      - com.networknt.mesh.kafka.handler.ConsumersGroupInstancesInstanceSubscriptionsGetHandler
+  - path: '/consumers/{group}/instances/{instance}/subscriptions'
+    method: 'DELETE'
+    exec:
+      - default
+      - com.networknt.mesh.kafka.handler.ConsumersGroupInstancesInstanceSubscriptionsDeleteHandler
+  - path: '/consumers/{group}/instances/{instance}/assignments'
+    method: 'POST'
+    exec:
+      - default
+      - com.networknt.mesh.kafka.handler.ConsumersGroupInstancesInstanceAssignmentsPostHandler
+  - path: '/consumers/{group}/instances/{instance}/assignments'
+    method: 'GET'
+    exec:
+      - default
+      - com.networknt.mesh.kafka.handler.ConsumersGroupInstancesInstanceAssignmentsGetHandler
+  - path: '/consumers/{group}/instances/{instance}/positions'
+    method: 'POST'
+    exec:
+      - default
+      - com.networknt.mesh.kafka.handler.ConsumersGroupInstancesInstancePositionsPostHandler
+  - path: '/consumers/{group}/instances/{instance}/positions/first'
+    method: 'POST'
+    exec:
+      - default
+      - com.networknt.mesh.kafka.handler.ConsumersGroupInstancesInstancePositionsFirstPostHandler
+  - path: '/consumers/{group}/instances/{instance}/positions/last'
+    method: 'POST'
+    exec:
+      - default
+      - com.networknt.mesh.kafka.handler.ConsumersGroupInstancesInstancePositionsLastPostHandler
+  - path: '/consumers/{group}/instances/{instance}/records'
+    method: 'GET'
+    exec:
+      - default
+      - com.networknt.mesh.kafka.handler.ConsumersGroupInstancesInstanceRecordsGetHandler
 
   - path: '/health/${server.serviceId:com.networknt.kafka-sidecar-1.0.0}'
     method: 'get'
