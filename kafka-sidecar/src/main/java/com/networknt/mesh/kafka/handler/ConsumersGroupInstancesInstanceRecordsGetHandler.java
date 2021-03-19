@@ -37,14 +37,9 @@ public class ConsumersGroupInstancesInstanceRecordsGetHandler implements LightHt
 
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-        if (exchange.isInIoThread()) {
-            exchange.dispatch(this);
-            return;
-        }
-
+        exchange.dispatch();
         String group = exchange.getPathParameters().get("group").getFirst();
         String instance = exchange.getPathParameters().get("instance").getFirst();
-        Map<String, Deque<String>> queryParameters = exchange.getQueryParameters();
         Deque<String> dequeTimeout = exchange.getQueryParameters().get("timeout");
         long timeoutMs = -1;
         if(dequeTimeout != null) {
