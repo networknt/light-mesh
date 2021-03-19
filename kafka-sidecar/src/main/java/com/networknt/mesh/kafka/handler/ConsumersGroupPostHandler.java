@@ -23,14 +23,13 @@ https://doc.networknt.com/development/business-handler/rest/
 public class ConsumersGroupPostHandler implements LightHttpHandler {
     private static final Logger logger = LoggerFactory.getLogger(ConsumersGroupPostHandler.class);
     public ConsumersGroupPostHandler () {
-        if(logger.isInfoEnabled()) logger.info("ConsumersGroupPostHandler constructed!");
+        if(logger.isDebugEnabled()) logger.debug("ConsumersGroupPostHandler constructed!");
     }
 
     
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
         String group = exchange.getPathParameters().get("group").getFirst();
-        exchange.dispatch();
         Map<String, Object> map = (Map)exchange.getAttachment(BodyHandler.REQUEST_BODY);
         CreateConsumerInstanceRequest request = Config.getInstance().getMapper().convertValue(map, CreateConsumerInstanceRequest.class);
         if(logger.isDebugEnabled()) logger.debug("group = " + group + " request = " + request);

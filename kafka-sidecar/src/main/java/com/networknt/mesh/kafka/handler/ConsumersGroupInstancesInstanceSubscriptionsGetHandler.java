@@ -2,9 +2,17 @@ package com.networknt.mesh.kafka.handler;
 
 import com.networknt.body.BodyHandler;
 import com.networknt.config.Config;
+import com.networknt.config.JsonMapper;
+import com.networknt.exception.FrameworkException;
 import com.networknt.handler.LightHttpHandler;
+import com.networknt.kafka.entity.ConsumerSubscriptionRecord;
+import com.networknt.kafka.entity.ConsumerSubscriptionResponse;
+import com.networknt.mesh.kafka.ConsumerStartupHook;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HeaderMap;
+import io.undertow.util.Headers;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Deque;
 import java.util.Map;
@@ -14,17 +22,26 @@ For more information on how to write business handlers, please check the link be
 https://doc.networknt.com/development/business-handler/rest/
 */
 public class ConsumersGroupInstancesInstanceSubscriptionsGetHandler implements LightHttpHandler {
+    private static final Logger logger = LoggerFactory.getLogger(ConsumersGroupInstancesInstanceDeleteHandler.class);
+    private static final String CONSUMER_INSTANCE_NOT_FOUND = "ERR12200";
 
     public ConsumersGroupInstancesInstanceSubscriptionsGetHandler () {
+        if(logger.isDebugEnabled()) logger.debug("ConsumersGroupInstancesInstanceSubscriptionsGetHandler constructed!");
     }
 
-    
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-        HeaderMap requestHeaders = exchange.getRequestHeaders();
-        Map<String, Deque<String>> queryParameters = exchange.getQueryParameters();
-        Map<String, Deque<String>> pathParameters = exchange.getPathParameters();
-        exchange.setStatusCode(200);
-        exchange.getResponseSender().send("");
+        String group = exchange.getPathParameters().get("group").getFirst();
+        String instance = exchange.getPathParameters().get("instance").getFirst();
+        if(logger.isDebugEnabled()) logger.debug("group = " + group + " instance = " + instance);
+        try {
+            ConsumerSubscriptionResponse response = ConsumerStartupHook.kafkaConsumerManager.subscription(group, instance);
+            exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "application/json");
+            exchange.setStatusCode(200);
+            exchange.getResponseSender().send(JsonMapper.toJson(response));
+        } catch (FrameworkException e) {
+            if(logger.isDebugEnabled()) logger.debug("FrameworkException", e);
+            setExchangeStatus(exchange, e.getStatus());
+        }
     }
 }

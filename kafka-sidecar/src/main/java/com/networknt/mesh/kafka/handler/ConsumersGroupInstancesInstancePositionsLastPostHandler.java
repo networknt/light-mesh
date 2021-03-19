@@ -5,6 +5,9 @@ import com.networknt.config.Config;
 import com.networknt.handler.LightHttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HeaderMap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.Deque;
 import java.util.Map;
 
@@ -13,8 +16,10 @@ For more information on how to write business handlers, please check the link be
 https://doc.networknt.com/development/business-handler/rest/
 */
 public class ConsumersGroupInstancesInstancePositionsLastPostHandler implements LightHttpHandler {
+    private static final Logger logger = LoggerFactory.getLogger(ConsumersGroupInstancesInstanceDeleteHandler.class);
 
     public ConsumersGroupInstancesInstancePositionsLastPostHandler () {
+        if(logger.isDebugEnabled()) logger.debug("ConsumersGroupInstancesInstancePositionsLastPostHandler constructed!");
     }
 
     

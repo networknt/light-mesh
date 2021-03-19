@@ -1,30 +1,29 @@
 package com.networknt.mesh.kafka.handler;
 
-import com.networknt.body.BodyHandler;
-import com.networknt.config.Config;
 import com.networknt.handler.LightHttpHandler;
+import com.networknt.mesh.kafka.ConsumerStartupHook;
 import io.undertow.server.HttpServerExchange;
-import io.undertow.util.HeaderMap;
-
-import java.util.Deque;
-import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
 For more information on how to write business handlers, please check the link below.
 https://doc.networknt.com/development/business-handler/rest/
 */
 public class ConsumersGroupInstancesInstanceDeleteHandler implements LightHttpHandler {
+    private static final Logger logger = LoggerFactory.getLogger(ConsumersGroupInstancesInstanceDeleteHandler.class);
 
     public ConsumersGroupInstancesInstanceDeleteHandler () {
+        if(logger.isInfoEnabled()) logger.debug("ConsumersGroupInstancesInstanceDeleteHandler constructed!");
     }
 
-    
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-        HeaderMap requestHeaders = exchange.getRequestHeaders();
-        Map<String, Deque<String>> queryParameters = exchange.getQueryParameters();
-        Map<String, Deque<String>> pathParameters = exchange.getPathParameters();
-        exchange.setStatusCode(200);
-        exchange.getResponseSender().send("");
+        String group = exchange.getPathParameters().get("group").getFirst();
+        String instance = exchange.getPathParameters().get("instance").getFirst();
+        if(logger.isDebugEnabled()) logger.debug("group = " + group + " instance = " + instance);
+        ConsumerStartupHook.kafkaConsumerManager.deleteConsumer(group, instance);
+        exchange.setStatusCode(204);
+        exchange.endExchange();
     }
 }
