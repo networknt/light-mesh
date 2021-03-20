@@ -1,8 +1,17 @@
 package com.networknt.mesh.kafka.handler;
 
+import com.networknt.body.BodyHandler;
+import com.networknt.config.Config;
+import com.networknt.config.JsonMapper;
+import com.networknt.exception.FrameworkException;
 import com.networknt.handler.LightHttpHandler;
+import com.networknt.kafka.entity.ConsumerAssignmentRequest;
+import com.networknt.kafka.entity.ConsumerAssignmentResponse;
+import com.networknt.kafka.entity.ConsumerSubscriptionResponse;
+import com.networknt.mesh.kafka.ConsumerStartupHook;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HeaderMap;
+import io.undertow.util.Headers;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,12 +29,21 @@ public class ConsumersGroupInstancesInstanceAssignmentsGetHandler implements Lig
         if(logger.isDebugEnabled()) logger.debug("ConsumersGroupInstancesInstanceAssignmentsGetHandler constructed!");
     }
 
-    
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-        Map<String, Deque<String>> queryParameters = exchange.getQueryParameters();
-        Map<String, Deque<String>> pathParameters = exchange.getPathParameters();
-        exchange.setStatusCode(200);
-        exchange.getResponseSender().send("");
+        String group = exchange.getPathParameters().get("group").getFirst();
+        String instance = exchange.getPathParameters().get("instance").getFirst();
+        Map<String, Object> map = (Map)exchange.getAttachment(BodyHandler.REQUEST_BODY);
+        ConsumerAssignmentRequest request = Config.getInstance().getMapper().convertValue(map, ConsumerAssignmentRequest.class);
+        if(logger.isDebugEnabled()) logger.debug("group = " + group + " instance = " + instance + " request = " + request);
+        try {
+            ConsumerAssignmentResponse response = ConsumerStartupHook.kafkaConsumerManager.assignment(group, instance);
+            exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "application/json");
+            exchange.setStatusCode(200);
+            exchange.getResponseSender().send(JsonMapper.toJson(response));
+        } catch (FrameworkException e) {
+            if(logger.isDebugEnabled()) logger.debug("FrameworkException", e);
+            setExchangeStatus(exchange, e.getStatus());
+        }
     }
 }

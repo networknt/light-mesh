@@ -2,9 +2,16 @@ package com.networknt.mesh.kafka.handler;
 
 import com.networknt.body.BodyHandler;
 import com.networknt.config.Config;
+import com.networknt.config.JsonMapper;
 import com.networknt.handler.LightHttpHandler;
+import com.networknt.kafka.entity.CommitOffsetsResponse;
+import com.networknt.kafka.entity.ConsumerCommittedRequest;
+import com.networknt.kafka.entity.ConsumerCommittedResponse;
+import com.networknt.kafka.entity.ConsumerOffsetCommitRequest;
+import com.networknt.mesh.kafka.ConsumerStartupHook;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HeaderMap;
+import io.undertow.util.Headers;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,13 +29,16 @@ public class ConsumersGroupInstancesInstanceOffsetsPutHandler implements LightHt
         if(logger.isDebugEnabled()) logger.debug("ConsumersGroupInstancesInstanceOffsetsPutHandler constructed!");
     }
 
-    
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-        HeaderMap requestHeaders = exchange.getRequestHeaders();
-        Map<String, Deque<String>> queryParameters = exchange.getQueryParameters();
-        Map<String, Deque<String>> pathParameters = exchange.getPathParameters();
+        String group = exchange.getPathParameters().get("group").getFirst();
+        String instance = exchange.getPathParameters().get("instance").getFirst();
+        Map<String, Object> map = (Map)exchange.getAttachment(BodyHandler.REQUEST_BODY);
+        ConsumerCommittedRequest request = Config.getInstance().getMapper().convertValue(map, ConsumerCommittedRequest.class);
+        if(logger.isDebugEnabled()) logger.debug("group = " + group + " instance = " + instance + " request = " + request);
+        ConsumerCommittedResponse response = ConsumerStartupHook.kafkaConsumerManager.committed(group, instance, request);
+        exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "application/json");
         exchange.setStatusCode(200);
-        exchange.getResponseSender().send("");
+        exchange.getResponseSender().send(JsonMapper.toJson(response));
     }
 }

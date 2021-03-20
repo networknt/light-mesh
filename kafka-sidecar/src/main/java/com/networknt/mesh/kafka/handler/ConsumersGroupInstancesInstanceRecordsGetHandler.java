@@ -10,17 +10,13 @@ import com.networknt.kafka.entity.JsonConsumerRecord;
 import com.networknt.kafka.entity.SchemaConsumerRecord;
 import com.networknt.mesh.kafka.ConsumerStartupHook;
 import io.undertow.server.HttpServerExchange;
-import io.undertow.util.HeaderMap;
 import io.undertow.util.Headers;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.ws.rs.container.AsyncResponse;
-import javax.ws.rs.container.Suspended;
 import java.time.Duration;
 import java.util.Deque;
 import java.util.List;
-import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -73,25 +69,7 @@ public class ConsumersGroupInstancesInstanceRecordsGetHandler implements LightHt
                         JsonConsumerRecord::fromConsumerRecord);
                 break;
             case "avro":
-                readRecords(
-                        exchange,
-                        group,
-                        instance,
-                        Duration.ofMillis(timeoutMs),
-                        maxBytes,
-                        SchemaKafkaConsumerState.class,
-                        SchemaConsumerRecord::fromConsumerRecord);
-                break;
             case "jsonschema":
-                readRecords(
-                        exchange,
-                        group,
-                        instance,
-                        Duration.ofMillis(timeoutMs),
-                        maxBytes,
-                        SchemaKafkaConsumerState.class,
-                        SchemaConsumerRecord::fromConsumerRecord);
-                break;
             case "protobuf":
                 readRecords(
                         exchange,

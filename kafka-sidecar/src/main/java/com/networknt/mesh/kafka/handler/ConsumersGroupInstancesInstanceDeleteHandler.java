@@ -1,5 +1,6 @@
 package com.networknt.mesh.kafka.handler;
 
+import com.networknt.exception.FrameworkException;
 import com.networknt.handler.LightHttpHandler;
 import com.networknt.mesh.kafka.ConsumerStartupHook;
 import io.undertow.server.HttpServerExchange;
@@ -22,8 +23,13 @@ public class ConsumersGroupInstancesInstanceDeleteHandler implements LightHttpHa
         String group = exchange.getPathParameters().get("group").getFirst();
         String instance = exchange.getPathParameters().get("instance").getFirst();
         if(logger.isDebugEnabled()) logger.debug("group = " + group + " instance = " + instance);
-        ConsumerStartupHook.kafkaConsumerManager.deleteConsumer(group, instance);
-        exchange.setStatusCode(204);
-        exchange.endExchange();
+        try {
+            ConsumerStartupHook.kafkaConsumerManager.deleteConsumer(group, instance);
+            exchange.setStatusCode(204);
+            exchange.endExchange();
+        } catch (FrameworkException e) {
+            if(logger.isDebugEnabled()) logger.debug("FrameworkException:", e);
+            setExchangeStatus(exchange, e.getStatus());
+        }
     }
 }

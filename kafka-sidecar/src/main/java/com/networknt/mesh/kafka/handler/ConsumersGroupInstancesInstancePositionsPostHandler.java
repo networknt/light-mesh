@@ -2,9 +2,17 @@ package com.networknt.mesh.kafka.handler;
 
 import com.networknt.body.BodyHandler;
 import com.networknt.config.Config;
+import com.networknt.config.JsonMapper;
+import com.networknt.exception.FrameworkException;
 import com.networknt.handler.LightHttpHandler;
+import com.networknt.kafka.entity.ConsumerCommittedRequest;
+import com.networknt.kafka.entity.ConsumerCommittedResponse;
+import com.networknt.kafka.entity.ConsumerSeekRequest;
+import com.networknt.kafka.entity.ConsumerSeekToRequest;
+import com.networknt.mesh.kafka.ConsumerStartupHook;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HeaderMap;
+import io.undertow.util.Headers;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,13 +30,20 @@ public class ConsumersGroupInstancesInstancePositionsPostHandler implements Ligh
         if(logger.isDebugEnabled()) logger.debug("ConsumersGroupInstancesInstancePositionsPostHandler constructed!");
     }
 
-    
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-        HeaderMap requestHeaders = exchange.getRequestHeaders();
-        Map<String, Deque<String>> queryParameters = exchange.getQueryParameters();
-        Map<String, Deque<String>> pathParameters = exchange.getPathParameters();
-        exchange.setStatusCode(200);
-        exchange.getResponseSender().send("");
+        String group = exchange.getPathParameters().get("group").getFirst();
+        String instance = exchange.getPathParameters().get("instance").getFirst();
+        Map<String, Object> map = (Map)exchange.getAttachment(BodyHandler.REQUEST_BODY);
+        ConsumerSeekRequest request = Config.getInstance().getMapper().convertValue(map, ConsumerSeekRequest.class);
+        if(logger.isDebugEnabled()) logger.debug("group = " + group + " instance = " + instance + " request = " + request);
+        try {
+            ConsumerStartupHook.kafkaConsumerManager.seek(group, instance, request);
+            exchange.setStatusCode(204);
+            exchange.endExchange();
+        } catch (FrameworkException e) {
+            if(logger.isDebugEnabled()) logger.debug("FrameworkException:", e);
+            setExchangeStatus(exchange, e.getStatus());
+        }
     }
 }
