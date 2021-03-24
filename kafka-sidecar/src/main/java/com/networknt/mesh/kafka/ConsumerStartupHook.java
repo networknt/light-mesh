@@ -7,7 +7,16 @@ import com.networknt.server.StartupHookProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ConsumerStartupHook  implements StartupHookProvider {
+/**
+ * Start the passive consumer that listens to the REST calls from the backend Api/App. The Api/App needs to
+ * invoke the /consumers/{group} to create a consumer group and start a consumer instance. Then call the
+ * /consumers/{group}/instances/{instance}/subscriptions to subscribe one or more topic/partition combination(s).
+ * Once the subscriptions is called, the Api/App can call the endpoint /consumers/{group}/instances/{instance}/records
+ * to read the Kafka records.
+ *
+ * @author Steve Hu
+ */
+public class ConsumerStartupHook implements StartupHookProvider {
     private static Logger logger = LoggerFactory.getLogger(ConsumerStartupHook.class);
     public static KafkaConsumerManager kafkaConsumerManager;
     @Override
