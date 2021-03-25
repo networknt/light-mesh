@@ -20,6 +20,7 @@ import org.slf4j.LoggerFactory;
 import org.xnio.OptionMap;
 
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.*;
@@ -102,15 +103,19 @@ public class CallbackConsumerStartupHook implements StartupHookProvider {
                         offset = record.offset();
                         firstRecord = false;
                     }
-                    Map<String, byte[]> headerMap = new HashMap<>();
+                    Map<String, String> headerMap = new HashMap<>();
                     Iterator<Header> headerIterator = record.headers().iterator();
                     while(headerIterator.hasNext()) {
                         Header header = headerIterator.next();
-                        headerMap.put(header.key(), header.value());
+                        headerMap.put(header.key(), new String(header.value(), StandardCharsets.UTF_8));
                     }
                     Map<String, Object> map = new HashMap<>();
-                    map.put("key", record.key());
-                    map.put("value", record.value());
+                    byte[] originalKey = (byte[])record.key();
+                    byte[] key = Arrays.copyOfRange(originalKey, 5, originalKey.length);
+                    if(record.key() != null) map.put("key", new String(key, StandardCharsets.UTF_8));
+                    byte[] originalValue = (byte[])record.value();
+                    byte[] value = Arrays.copyOfRange(originalValue, 5, originalValue.length);
+                    if(record.value() != null) map.put("value", new String(value, StandardCharsets.UTF_8));
                     map.put("headers", headerMap);
                     map.put("partition", record.partition());
                     map.put("offset", record.offset());
@@ -135,7 +140,12 @@ public class CallbackConsumerStartupHook implements StartupHookProvider {
                     int statusCode = reference.get().getResponseCode();
                     String body = reference.get().getAttachment(Http2Client.RESPONSE_BODY);
                     if(logger.isDebugEnabled()) logger.debug("statusCode = " + statusCode + " body  = " + body);
-                    consumer.commitSync();
+                    if(statusCode >= 400) {
+                        // something happens on the backend and the data is not consumed correctly.
+                        consumer.seek(new TopicPartition(config.getTopic(), partition), offset);
+                    } else {
+                        consumer.commitSync();
+                    }
                 } catch (Exception  e) {
                     if(logger.isDebugEnabled()) logger.debug("Rollback to partition " + partition  + " offset " + offset, e);
                     consumer.seek(new TopicPartition(config.getTopic(), partition), offset);
