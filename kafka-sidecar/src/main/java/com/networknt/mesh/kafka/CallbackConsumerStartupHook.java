@@ -12,16 +12,15 @@ import io.undertow.client.ClientRequest;
 import io.undertow.client.ClientResponse;
 import io.undertow.util.Headers;
 import io.undertow.util.Methods;
-import org.apache.kafka.clients.consumer.Consumer;
-import org.apache.kafka.clients.consumer.ConsumerConfig;
-import org.apache.kafka.clients.consumer.ConsumerRecords;
-import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.apache.kafka.clients.consumer.*;
+import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.header.Header;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xnio.OptionMap;
 
 import java.net.URI;
+import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicReference;
@@ -44,7 +43,7 @@ public class CallbackConsumerStartupHook implements StartupHookProvider {
     static Http2Client client = Http2Client.getInstance();
     static private ClientConnection connection;
     static private ExecutorService executor = newSingleThreadExecutor();
-    static private Consumer<byte[], byte[]> consumer = createConsumer();
+    static private KafkaConsumerConfig config = (KafkaConsumerConfig) Config.getInstance().getJsonObjectConfig(KafkaConsumerConfig.CONFIG_NAME, KafkaConsumerConfig.class);
 
     @Override
     public void onStartup() {
@@ -53,13 +52,14 @@ public class CallbackConsumerStartupHook implements StartupHookProvider {
         logger.debug("CallbackConsumerStartupHook ends");
     }
 
-    private static Consumer<byte[], byte[]> createConsumer() {
-        KafkaConsumerConfig config = (KafkaConsumerConfig) Config.getInstance().getJsonObjectConfig(KafkaConsumerConfig.CONFIG_NAME, KafkaConsumerConfig.class);
+    private Consumer<byte[], byte[]> createConsumer() {
         final Properties props = new Properties();
         props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, config.getBootstrapServers());
         props.put(ConsumerConfig.GROUP_ID_CONFIG, config.getGroupId());
+        props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, false);
         props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, config.getKeyDeserializer());
         props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, config.getValueDeserializer());
+
         // Create the consumer using props.
         final Consumer<byte[], byte[]> consumer = new KafkaConsumer<>(props);
         // Subscribe to the topic.
@@ -75,9 +75,11 @@ public class CallbackConsumerStartupHook implements StartupHookProvider {
     class ConsumerTask implements Runnable {
         @Override
         public void run() {
-            int noRecordsCount = 0;
+            Consumer<byte[], byte[]> consumer = createConsumer();
             while (!done) {
-                final ConsumerRecords<byte[], byte[]> consumerRecords = consumer.poll(1000);
+                final ConsumerRecords<byte[], byte[]> consumerRecords = consumer.poll(Duration.ofMillis(100));
+                int partition = 0;
+                long offset = 0;
                 if (consumerRecords.count()==0) {
                     try {
                         // wait 10 seconds before the next poll. TODO make it configurable.
@@ -90,12 +92,20 @@ public class CallbackConsumerStartupHook implements StartupHookProvider {
                 }
 
                 List<Map<String, Object>> list = new ArrayList<>();
-                consumerRecords.forEach(record -> {
-                    System.out.printf("Consumer Record:(%s, %s, %s, %d, %d)\n", record.key().toString(), record.value().toString(), record.headers().toString(), record.partition(), record.offset());
+                Iterator<ConsumerRecord<byte[], byte[]>> recordIterator = consumerRecords.iterator();
+                boolean firstRecord = true;
+                while(recordIterator.hasNext()) {
+                    ConsumerRecord record = recordIterator.next();
+                    if(firstRecord) {
+                        // first record and we mark the partition and offset for rollback if exception occurs
+                        partition = record.partition();
+                        offset = record.offset();
+                        firstRecord = false;
+                    }
                     Map<String, byte[]> headerMap = new HashMap<>();
-                    Iterator<Header> iterator = record.headers().iterator();
-                    while(iterator.hasNext()) {
-                        Header header = iterator.next();
+                    Iterator<Header> headerIterator = record.headers().iterator();
+                    while(headerIterator.hasNext()) {
+                        Header header = headerIterator.next();
                         headerMap.put(header.key(), header.value());
                     }
                     Map<String, Object> map = new HashMap<>();
@@ -105,13 +115,13 @@ public class CallbackConsumerStartupHook implements StartupHookProvider {
                     map.put("partition", record.partition());
                     map.put("offset", record.offset());
                     list.add(map);
-                });
-
+                }
                 if(connection == null || !connection.isOpen()) {
                     try {
-                        connection = client.borrowConnection(new URI("https://localhost:8444"), Http2Client.WORKER, Http2Client.SSL, Http2Client.BUFFER_POOL, OptionMap.create(UndertowOptions.ENABLE_HTTP2, true)).get();
+                        connection = client.borrowConnection(new URI("https://localhost:8444"), Http2Client.WORKER, client.getDefaultXnioSsl(), Http2Client.BUFFER_POOL, OptionMap.create(UndertowOptions.ENABLE_HTTP2, true)).get();
                     } catch (Exception e) {
-                        e.printStackTrace();
+                        if(logger.isDebugEnabled()) logger.debug("Rollback to partition " + partition  + " offset " + offset, e);
+                        consumer.seek(new TopicPartition(config.getTopic(), partition), offset);
                     }
                 }
                 final CountDownLatch latch = new CountDownLatch(1);
@@ -124,11 +134,11 @@ public class CallbackConsumerStartupHook implements StartupHookProvider {
                     latch.await();
                     int statusCode = reference.get().getResponseCode();
                     String body = reference.get().getAttachment(Http2Client.RESPONSE_BODY);
-                    logger.debug("statusCode = " + statusCode);
-                    logger.debug("body = " + body);
-                    consumer.commitAsync();
+                    if(logger.isDebugEnabled()) logger.debug("statusCode = " + statusCode + " body  = " + body);
+                    consumer.commitSync();
                 } catch (Exception  e) {
-                    e.printStackTrace();
+                    if(logger.isDebugEnabled()) logger.debug("Rollback to partition " + partition  + " offset " + offset, e);
+                    consumer.seek(new TopicPartition(config.getTopic(), partition), offset);
                 }
             }
             consumer.close();
