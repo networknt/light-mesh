@@ -110,6 +110,7 @@ public class CallbackConsumerStartupHook implements StartupHookProvider {
                         headerMap.put(header.key(), new String(header.value(), StandardCharsets.UTF_8));
                     }
                     Map<String, Object> map = new HashMap<>();
+                    map.put("topic", record.topic());
                     byte[] originalKey = (byte[])record.key();
                     byte[] key = Arrays.copyOfRange(originalKey, 5, originalKey.length);
                     if(record.key() != null) map.put("key", new String(key, StandardCharsets.UTF_8));
