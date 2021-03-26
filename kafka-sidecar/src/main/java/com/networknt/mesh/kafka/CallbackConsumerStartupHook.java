@@ -84,7 +84,7 @@ public class CallbackConsumerStartupHook implements StartupHookProvider {
                 if (consumerRecords.count()==0) {
                     try {
                         // wait 10 seconds before the next poll. TODO make it configurable.
-                        Thread.sleep(10000);
+                        Thread.sleep(config.getWaitPeriod());
                     } catch (InterruptedException e) {
                         logger.error("InterruptedException", e);
                         // ignore it.
