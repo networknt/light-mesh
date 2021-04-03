@@ -64,7 +64,14 @@ public class CallbackConsumerStartupHook implements StartupHookProvider {
         // Create the consumer using props.
         final Consumer<byte[], byte[]> consumer = new KafkaConsumer<>(props);
         // Subscribe to the topic.
-        consumer.subscribe(Collections.singletonList(config.getTopic()));
+        String topic = config.getTopic();
+        if(topic.contains(",")) {
+            // remove the whitespaces
+            topic = topic.replaceAll("\\s+","");
+            consumer.subscribe(Arrays.asList(topic.split(",", -1)));
+        } else {
+            consumer.subscribe(Collections.singletonList(config.getTopic()));
+        }
         return consumer;
     }
 

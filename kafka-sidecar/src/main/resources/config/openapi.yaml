@@ -540,13 +540,39 @@ components:
     ProduceRequest:
       type: object
       properties:
+        keyFormat:
+          type: integer
+          enum: [
+            0,
+            1,
+            2,
+            3,
+            4
+          ]
         keySchema:
           type: string
         keySchemaId:
+          type: integer
+        keySchemaVersion:
+          type: integer
+        keySchemaSubject:
           type: string
+        valueFormat:
+          type: integer
+          enum: [
+            0,
+            1,
+            2,
+            3,
+            4
+          ]
         valueSchema:
           type: string
         valueSchemaId:
+          type: integer
+        valueSchemaVersion:
+          type: integer
+        valueSchemaSubject:
           type: string
         records:
           type: array
