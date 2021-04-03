@@ -5,6 +5,7 @@ import com.networknt.config.Config;
 import com.networknt.config.JsonMapper;
 import com.networknt.kafka.common.KafkaConsumerConfig;
 import com.networknt.kafka.consumer.KafkaConsumerManager;
+import com.networknt.kafka.entity.TopicPartitionOffset;
 import com.networknt.server.StartupHookProvider;
 import io.undertow.UndertowOptions;
 import io.undertow.client.ClientConnection;
@@ -86,11 +87,9 @@ public class CallbackConsumerStartupHook implements StartupHookProvider {
             Consumer<byte[], byte[]> consumer = createConsumer();
             while (!done) {
                 final ConsumerRecords<byte[], byte[]> consumerRecords = consumer.poll(Duration.ofMillis(100));
-                int partition = 0;
-                long offset = 0;
                 if (consumerRecords.count()==0) {
                     try {
-                        // wait 10 seconds before the next poll. TODO make it configurable.
+                        // wait a period of time before the next poll if there is no record
                         Thread.sleep(config.getWaitPeriod());
                     } catch (InterruptedException e) {
                         logger.error("InterruptedException", e);
@@ -101,15 +100,8 @@ public class CallbackConsumerStartupHook implements StartupHookProvider {
 
                 List<Map<String, Object>> list = new ArrayList<>();
                 Iterator<ConsumerRecord<byte[], byte[]>> recordIterator = consumerRecords.iterator();
-                boolean firstRecord = true;
                 while(recordIterator.hasNext()) {
                     ConsumerRecord record = recordIterator.next();
-                    if(firstRecord) {
-                        // first record and we mark the partition and offset for rollback if exception occurs
-                        partition = record.partition();
-                        offset = record.offset();
-                        firstRecord = false;
-                    }
                     Map<String, String> headerMap = new HashMap<>();
                     Iterator<Header> headerIterator = record.headers().iterator();
                     while(headerIterator.hasNext()) {
@@ -133,8 +125,9 @@ public class CallbackConsumerStartupHook implements StartupHookProvider {
                     try {
                         connection = client.borrowConnection(new URI("https://localhost:8444"), Http2Client.WORKER, client.getDefaultXnioSsl(), Http2Client.BUFFER_POOL, OptionMap.create(UndertowOptions.ENABLE_HTTP2, true)).get();
                     } catch (Exception e) {
-                        if(logger.isDebugEnabled()) logger.debug("Rollback to partition " + partition  + " offset " + offset, e);
-                        consumer.seek(new TopicPartition(config.getTopic(), partition), offset);
+                        Map<String, Object> firstRecord = list.get(0); // list is not empty at this point.
+                        if(logger.isDebugEnabled()) logger.debug("Rollback to partition " + firstRecord.get("partition")  + " offset " + firstRecord.get("offset"), e);
+                        consumer.seek(new TopicPartition((String)firstRecord.get("topic"), (Integer)firstRecord.get("partition")), (Long)firstRecord.get("offset"));
                     }
                 }
                 final CountDownLatch latch = new CountDownLatch(1);
@@ -150,18 +143,19 @@ public class CallbackConsumerStartupHook implements StartupHookProvider {
                     if(logger.isDebugEnabled()) logger.debug("statusCode = " + statusCode + " body  = " + body);
                     if(statusCode >= 400) {
                         // something happens on the backend and the data is not consumed correctly.
-                        consumer.seek(new TopicPartition(config.getTopic(), partition), offset);
+                        Map<String, Object> firstRecord = list.get(0); // list is not empty at this point.
+                        if(logger.isDebugEnabled()) logger.debug("Rollback to partition " + firstRecord.get("partition")  + " offset " + firstRecord.get("offset"));
+                        consumer.seek(new TopicPartition((String)firstRecord.get("topic"), (Integer)firstRecord.get("partition")), (Long)firstRecord.get("offset"));
                     } else {
                         consumer.commitSync();
                     }
                 } catch (Exception  e) {
-                    if(logger.isDebugEnabled()) logger.debug("Rollback to partition " + partition  + " offset " + offset, e);
-                    consumer.seek(new TopicPartition(config.getTopic(), partition), offset);
+                    Map<String, Object> firstRecord = list.get(0); // list is not empty at this point.
+                    if(logger.isDebugEnabled()) logger.debug("Rollback to partition " + firstRecord.get("partition")  + " offset " + firstRecord.get("offset"), e);
+                    consumer.seek(new TopicPartition((String)firstRecord.get("topic"), (Integer)firstRecord.get("partition")), (Long)firstRecord.get("offset"));
                 }
             }
             consumer.close();
-            System.out.println("DONE");
-
         }
     }
 }
