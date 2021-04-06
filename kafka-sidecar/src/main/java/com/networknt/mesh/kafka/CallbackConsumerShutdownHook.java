@@ -17,8 +17,8 @@ public class CallbackConsumerShutdownHook implements ShutdownHookProvider {
     @Override
     public void onShutdown() {
         logger.debug("CallbackConsumerShutdownHook begins");
-        if(CallbackConsumerStartupHook.kafkaConsumerManager != null) {
-            CallbackConsumerStartupHook.kafkaConsumerManager.shutdown();
+        if(CallbackConsumerStartupHook.done == false) {
+            CallbackConsumerStartupHook.done = true;
         }
         logger.debug("CallbackConsumerShutdownHook ends");
     }

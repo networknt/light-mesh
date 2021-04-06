@@ -4,8 +4,6 @@ import com.networknt.client.Http2Client;
 import com.networknt.config.Config;
 import com.networknt.config.JsonMapper;
 import com.networknt.kafka.common.KafkaConsumerConfig;
-import com.networknt.kafka.consumer.KafkaConsumerManager;
-import com.networknt.kafka.entity.TopicPartitionOffset;
 import com.networknt.server.StartupHookProvider;
 import io.undertow.UndertowOptions;
 import io.undertow.client.ClientConnection;
@@ -40,8 +38,6 @@ public class CallbackConsumerStartupHook implements StartupHookProvider {
     // An indicator that will break the consumer loop so that the consume can be closed. It is set
     // by the CallbackConsumerShutdownHook to do the clean up.
     public static boolean done = false;
-    public static KafkaConsumerManager kafkaConsumerManager;
-
     static Http2Client client = Http2Client.getInstance();
     static private ClientConnection connection;
     static private ExecutorService executor = newSingleThreadExecutor();
