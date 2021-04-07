@@ -51,15 +51,9 @@ public class CallbackConsumerStartupHook implements StartupHookProvider {
     }
 
     private Consumer<byte[], byte[]> createConsumer() {
-        final Properties props = new Properties();
-        props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, config.getBootstrapServers());
-        props.put(ConsumerConfig.GROUP_ID_CONFIG, config.getGroupId());
-        props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, false);
-        props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, config.getKeyDeserializer());
-        props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, config.getValueDeserializer());
-
-        // Create the consumer using props.
-        final Consumer<byte[], byte[]> consumer = new KafkaConsumer<>(props);
+        final Map<String, Object> properties = config.getProperties();
+        // Create the consumer using properties.
+        final Consumer<byte[], byte[]> consumer = new KafkaConsumer<>(properties);
         // Subscribe to the topic.
         String topic = config.getTopic();
         if(topic.contains(",")) {
