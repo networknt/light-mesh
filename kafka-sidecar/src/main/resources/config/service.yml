@@ -21,14 +21,14 @@ singletons:
 - com.networknt.server.StartupHookProvider:
   - com.networknt.mesh.kafka.ProducerStartupHook
   - com.networknt.mesh.kafka.ConsumerStartupHook
-  # - com.networknt.mesh.kafka.CallbackConsumerStartupHook
-  - com.networknt.mesh.kafka.KsqldbConsumerStartupHook
+  - com.networknt.mesh.kafka.CallbackConsumerStartupHook
+  # - com.networknt.mesh.kafka.KsqldbConsumerStartupHook
 # ShutdownHookProvider implementations, there are one to many and they are called in the same sequence defined.
 - com.networknt.server.ShutdownHookProvider:
   - com.networknt.mesh.kafka.ProducerShutdownHook
   - com.networknt.mesh.kafka.ConsumerShutdownHook
-  # - com.networknt.mesh.kafka.CallbackConsumerShutdownHook
-  - com.networknt.mesh.kafka.KsqldbConsumerShutdownHook
+  - com.networknt.mesh.kafka.CallbackConsumerShutdownHook
+  # - com.networknt.mesh.kafka.KsqldbConsumerShutdownHook
 - com.networknt.kafka.producer.NativeLightProducer:
   - com.networknt.kafka.producer.SidecarProducer
 
