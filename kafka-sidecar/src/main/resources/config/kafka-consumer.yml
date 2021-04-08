@@ -10,8 +10,12 @@ properties:
 # Callback Consumer Specific Configuration
 # The topic that is going to be consumed. For callback consumer only in the kafka-sidecar.
 # If two or more topics are going to be subscribed, concat them with comma without space.
-topic: test1,test2
+topic: sidecar-test
 # topic: test1
+# the format of the key optional
+keyFormat: jsonschema
+# the format of the value optional
+valueFormat: binary
 # Waiting period in millisecond to poll another batch
 waitPeriod: 10000
 
