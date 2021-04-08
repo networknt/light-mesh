@@ -38,6 +38,7 @@ public class CallbackConsumerStartupHook implements StartupHookProvider {
     // An indicator that will break the consumer loop so that the consume can be closed. It is set
     // by the CallbackConsumerShutdownHook to do the clean up.
     public static boolean done = false;
+    public static final byte MAGIC_BYTE = 0x0;
     static Http2Client client = Http2Client.getInstance();
     static private ClientConnection connection;
     static private ExecutorService executor = newSingleThreadExecutor();
@@ -101,11 +102,26 @@ public class CallbackConsumerStartupHook implements StartupHookProvider {
                     Map<String, Object> map = new HashMap<>();
                     map.put("topic", record.topic());
                     byte[] originalKey = (byte[])record.key();
-                    byte[] key = Arrays.copyOfRange(originalKey, 5, originalKey.length);
-                    if(record.key() != null) map.put("key", new String(key, StandardCharsets.UTF_8));
+                    // it is possible that the key does not exist.
+                    if(originalKey != null) {
+                        byte[] key = null;
+                        if(originalKey[0] == MAGIC_BYTE) {
+                            key = Arrays.copyOfRange(originalKey, 5, originalKey.length);
+                        } else {
+                            key = Arrays.copyOfRange(originalKey, 0, originalKey.length);
+                        }
+                        if (record.key() != null) map.put("key", new String(key, StandardCharsets.UTF_8));
+                    }
                     byte[] originalValue = (byte[])record.value();
-                    byte[] value = Arrays.copyOfRange(originalValue, 5, originalValue.length);
-                    if(record.value() != null) map.put("value", new String(value, StandardCharsets.UTF_8));
+                    if(originalValue != null) {
+                        byte[] value = null;
+                        if(originalValue[0] == MAGIC_BYTE) {
+                            value = Arrays.copyOfRange(originalValue, 5, originalValue.length);
+                        } else {
+                            value = Arrays.copyOfRange(originalValue, 0, originalValue.length);
+                        }
+                        if(record.value() != null) map.put("value", new String(value, StandardCharsets.UTF_8));
+                    }
                     map.put("headers", headerMap);
                     map.put("partition", record.partition());
                     map.put("offset", record.offset());
