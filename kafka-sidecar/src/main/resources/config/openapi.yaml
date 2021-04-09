@@ -580,6 +580,7 @@ components:
             type: object
       required:
         - records
+        - valueFormat
     CreateConsumerInstanceRequest:
       type: object
       properties:
