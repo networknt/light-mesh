@@ -19,6 +19,7 @@ import com.networknt.kafka.entity.EmbeddedFormat;
 import io.confluent.kafka.schemaregistry.avro.AvroSchemaProvider;
 import io.confluent.kafka.schemaregistry.client.CachedSchemaRegistryClient;
 import io.confluent.kafka.schemaregistry.client.SchemaRegistryClient;
+import io.confluent.kafka.schemaregistry.client.rest.exceptions.RestClientException;
 import io.confluent.kafka.schemaregistry.json.JsonSchemaProvider;
 import io.confluent.kafka.schemaregistry.protobuf.ProtobufSchemaProvider;
 import io.confluent.kafka.serializers.subject.TopicNameStrategy;
@@ -126,13 +127,7 @@ public class ProducersTopicPostHandler implements LightHttpHandler {
         Map<String, Object> map = (Map)exchange.getAttachment(BodyHandler.REQUEST_BODY);
         ProduceRequest produceRequest = Config.getInstance().getMapper().convertValue(map, ProduceRequest.class);
         Headers headers = populateHeaders(exchange, config, topic);
-        EmbeddedFormat valueFormat = produceRequest.getValueFormat().get();
-        CompletableFuture<ProduceResponse> responseFuture;
-        if(valueFormat == EmbeddedFormat.BINARY || valueFormat == EmbeddedFormat.BINARY) {
-            responseFuture = produceWithoutSchema(valueFormat, topic, Optional.empty(), produceRequest, headers);
-        } else {
-            responseFuture = produceWithSchema(topic, Optional.empty(), produceRequest, headers);
-        }
+        CompletableFuture<ProduceResponse> responseFuture = produceWithSchema(topic, Optional.empty(), produceRequest, headers);
         responseFuture.whenCompleteAsync((response, throwable) -> {
             exchange.getResponseHeaders().put(io.undertow.util.Headers.CONTENT_TYPE, "application/json");
             exchange.getResponseSender().send(JsonMapper.toJson(response));
@@ -195,8 +190,8 @@ public class ProducersTopicPostHandler implements LightHttpHandler {
 
         List<SerializedKeyAndValue> serialized =
                 serialize(
-                        keyFormat.get(),
-                        valueFormat.get(),
+                        keyFormat,
+                        valueFormat,
                         topicName,
                         partition,
                         keySchema,
@@ -207,29 +202,6 @@ public class ProducersTopicPostHandler implements LightHttpHandler {
 
         return produceResultsToResponse(keySchema, valueSchema, resultFutures);
     }
-
-    final CompletableFuture<ProduceResponse> produceWithoutSchema(
-            EmbeddedFormat format,
-            String topicName,
-            Optional<Integer> partition,
-            ProduceRequest request,
-            Headers headers) {
-        List<SerializedKeyAndValue> serialized =
-                serialize(
-                        request.getKeyFormat().orElse(EmbeddedFormat.BINARY),
-                        request.getValueFormat().orElse(EmbeddedFormat.BINARY),
-                        topicName,
-                        partition,
-                        /* keySchema= */ Optional.empty(),
-                        /* valueSchema= */ Optional.empty(),
-                        request.getRecords());
-
-        List<CompletableFuture<ProduceResult>> resultFutures = doProduce(topicName, serialized, headers);
-
-        return produceResultsToResponse(
-                /* keySchema= */ Optional.empty(), /* valueSchema= */ Optional.empty(), resultFutures);
-    }
-
 
     private Optional<RegisteredSchema> getSchema(
             String topicName,
@@ -255,12 +227,14 @@ public class ProducersTopicPostHandler implements LightHttpHandler {
             logger.error("IllegalStateException:", e);
             Status status = new Status(FAILED_TO_GET_SCHEMA);
             throw new FrameworkException(status, e);
+        } catch (RuntimeException e) {
+            return Optional.empty();
         }
     }
 
     private List<SerializedKeyAndValue> serialize(
-            EmbeddedFormat keyFormat,
-            EmbeddedFormat valueFormat,
+            Optional<EmbeddedFormat> keyFormat,
+            Optional<EmbeddedFormat> valueFormat,
             String topicName,
             Optional<Integer> partition,
             Optional<RegisteredSchema> keySchema,
@@ -272,25 +246,25 @@ public class ProducersTopicPostHandler implements LightHttpHandler {
                         record ->
                                 new SerializedKeyAndValue(
                                         record.getPartition().map(Optional::of).orElse(partition),
-                                        keyFormat.requiresSchema() ?
+                                        keyFormat.isPresent() && keyFormat.get().requiresSchema() ?
                                         schemaRecordSerializer
                                                 .serialize(
-                                                        keyFormat,
+                                                        keyFormat.get(),
                                                         topicName,
                                                         keySchema,
                                                         record.getKey().orElse(NullNode.getInstance()),
                                                         /* isKey= */ true) :
                                         noSchemaRecordSerializer
-                                                .serialize(keyFormat, record.getKey().orElse(NullNode.getInstance())),
-                                        valueFormat.requiresSchema() ?
+                                                .serialize(keyFormat.orElse(EmbeddedFormat.BINARY), record.getKey().orElse(NullNode.getInstance())),
+                                        valueFormat.isPresent() && valueFormat.get().requiresSchema() ?
                                         schemaRecordSerializer
                                                 .serialize(
-                                                        valueFormat,
+                                                        valueFormat.get(),
                                                         topicName,
                                                         valueSchema,
                                                         record.getValue().orElse(NullNode.getInstance()),
                                                         /* isKey= */ false) :
-                                        noSchemaRecordSerializer.serialize(valueFormat, record.getValue().orElse(NullNode.getInstance())))
+                                        noSchemaRecordSerializer.serialize(valueFormat.orElse(EmbeddedFormat.BINARY), record.getValue().orElse(NullNode.getInstance())))
                 )
                 .collect(Collectors.toList());
     }
