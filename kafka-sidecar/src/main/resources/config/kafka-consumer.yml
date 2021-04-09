@@ -6,9 +6,10 @@ properties:
   enable.auto.commit: false
   auto.offset.reset: earliest
   group.id: group1
+  schema.registry.url: http://localhost:8081
 
-# Callback Consumer Specific Configuration
-# The topic that is going to be consumed. For callback consumer only in the kafka-sidecar.
+# Reactive Consumer Specific Configuration
+# The topic that is going to be consumed. For reactive consumer only in the kafka-sidecar.
 # If two or more topics are going to be subscribed, concat them with comma without space.
 topic: sidecar-test
 # topic: test1
@@ -19,7 +20,7 @@ valueFormat: binary
 # Waiting period in millisecond to poll another batch
 waitPeriod: 10000
 
-# Batch Consumer Specific Configuration
+# Active Consumer Specific Configuration
 # default max consumer threads to 50.
 maxConsumerThreads: 50
 # a unique id for the server instance, if running in a Kubernetes cluster, use the container id environment variable
