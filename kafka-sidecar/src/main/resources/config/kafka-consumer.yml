@@ -11,12 +11,12 @@ properties:
 # Reactive Consumer Specific Configuration
 # The topic that is going to be consumed. For reactive consumer only in the kafka-sidecar.
 # If two or more topics are going to be subscribed, concat them with comma without space.
-topic: sidecar-test
-# topic: test1
+# topic: sidecar-test
+topic: test1
 # the format of the key optional
 keyFormat: jsonschema
 # the format of the value optional
-valueFormat: binary
+valueFormat: jsonschema
 # Waiting period in millisecond to poll another batch
 waitPeriod: 10000
 
@@ -35,5 +35,3 @@ fetchMinBytes: 10000000
 instanceTimeoutMs: 300000
 # Amount of time to backoff when an iterator runs out of date.
 iteratorBackoffMs: 50
-# schema registry url
-schemaRegistryUrl: http://localhost:8081
