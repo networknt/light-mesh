@@ -55,7 +55,7 @@ public class ReactiveConsumerStartupHook implements StartupHookProvider {
         // get or create the KafkaConsumerManager
         kafkaConsumerManager = new KafkaConsumerManager(config);
         String groupId = (String)config.getProperties().get("group.id");
-        CreateConsumerInstanceRequest request = new CreateConsumerInstanceRequest(null, null, null, null, null, null, null);
+        CreateConsumerInstanceRequest request = new CreateConsumerInstanceRequest(null, null, config.getValueFormat(), null, null, null, null);
         instanceId = kafkaConsumerManager.createConsumer(groupId, request.toConsumerInstanceConfig());
 
         String topic = config.getTopic();
