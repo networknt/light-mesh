@@ -5,7 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class KsqldbConsumerShutdownHook implements ShutdownHookProvider {
-    private static Logger logger = LoggerFactory.getLogger(CallbackConsumerShutdownHook.class);
+    private static Logger logger = LoggerFactory.getLogger(KsqldbConsumerShutdownHook.class);
 
     @Override
     public void onShutdown() {
