@@ -12,19 +12,13 @@ import io.undertow.UndertowOptions;
 import io.undertow.client.ClientConnection;
 import io.undertow.client.ClientRequest;
 import io.undertow.client.ClientResponse;
-import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
 import io.undertow.util.Methods;
-import org.apache.kafka.clients.consumer.Consumer;
-import org.apache.kafka.clients.consumer.ConsumerRecords;
-import org.apache.kafka.common.TopicPartition;
-import org.apache.kafka.common.header.Header;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xnio.OptionMap;
 
 import java.net.URI;
-import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.CountDownLatch;
@@ -45,6 +39,7 @@ public class ReactiveConsumerStartupHook implements StartupHookProvider {
     long timeoutMs = -1;
     long maxBytes = -1;
     String instanceId;
+    String groupId;
     // An indicator that will break the consumer loop so that the consume can be closed. It is set
     // by the CallbackConsumerShutdownHook to do the clean up.
     public static boolean done = false;
@@ -54,7 +49,7 @@ public class ReactiveConsumerStartupHook implements StartupHookProvider {
         logger.debug("ReactiveConsumerStartupHook begins");
         // get or create the KafkaConsumerManager
         kafkaConsumerManager = new KafkaConsumerManager(config);
-        String groupId = (String)config.getProperties().get("group.id");
+        groupId = (String)config.getProperties().get("group.id");
         CreateConsumerInstanceRequest request = new CreateConsumerInstanceRequest(null, null, config.getValueFormat(), null, null, null, null);
         instanceId = kafkaConsumerManager.createConsumer(groupId, request.toConsumerInstanceConfig());
 
@@ -84,19 +79,11 @@ public class ReactiveConsumerStartupHook implements StartupHookProvider {
                 switch(config.getValueFormat()) {
                     case "binary":
                         readRecords(
-                                (String)config.getProperties().get("group.id"),
-                                instanceId,
-                                Duration.ofMillis(timeoutMs),
-                                maxBytes,
                                 BinaryKafkaConsumerState.class,
                                 BinaryConsumerRecord::fromConsumerRecord);
                         break;
                     case "json":
                         readRecords(
-                                (String)config.getProperties().get("group.id"),
-                                instanceId,
-                                Duration.ofMillis(timeoutMs),
-                                maxBytes,
                                 JsonKafkaConsumerState.class,
                                 JsonConsumerRecord::fromConsumerRecord);
                         break;
@@ -104,10 +91,6 @@ public class ReactiveConsumerStartupHook implements StartupHookProvider {
                     case "jsonschema":
                     case "protobuf":
                         readRecords(
-                                (String)config.getProperties().get("group.id"),
-                                instanceId,
-                                Duration.ofMillis(timeoutMs),
-                                maxBytes,
                                 SchemaKafkaConsumerState.class,
                                 SchemaConsumerRecord::fromConsumerRecord);
                         break;
@@ -124,18 +107,14 @@ public class ReactiveConsumerStartupHook implements StartupHookProvider {
     }
 
     private <KafkaKeyT, KafkaValueT, ClientKeyT, ClientValueT> void readRecords(
-            String group,
-            String instance,
-            Duration timeout,
-            long maxBytes,
             Class<? extends KafkaConsumerState<KafkaKeyT, KafkaValueT, ClientKeyT, ClientValueT>>
                     consumerStateType,
             Function<com.networknt.kafka.entity.ConsumerRecord<ClientKeyT, ClientValueT>, ?> toJsonWrapper
     ) {
         maxBytes = (maxBytes <= 0) ? Long.MAX_VALUE : maxBytes;
-
+        Duration timeout = Duration.ofMillis(timeoutMs);
         kafkaConsumerManager.readRecords(
-                group, instance, consumerStateType, timeout, maxBytes,
+                groupId, instanceId, consumerStateType, timeout, maxBytes,
                 new ConsumerReadCallback<ClientKeyT, ClientValueT>() {
                     @Override
                     public void onCompletion(
@@ -143,16 +122,14 @@ public class ReactiveConsumerStartupHook implements StartupHookProvider {
                     ) {
                         if (e != null) {
                             if(logger.isDebugEnabled()) logger.debug("FrameworkException:", e);
-
                         } else {
                             if(records.size() > 0) {
+                                if(logger.isDebugEnabled()) logger.debug("polled records size = " + records.size());
                                 if(connection == null || !connection.isOpen()) {
                                     try {
                                         connection = client.borrowConnection(new URI("https://localhost:8444"), Http2Client.WORKER, client.getDefaultXnioSsl(), Http2Client.BUFFER_POOL, OptionMap.create(UndertowOptions.ENABLE_HTTP2, true)).get();
                                     } catch (Exception ex) {
-//                                    Map<String, Object> firstRecord = list.get(0); // list is not empty at this point.
-//                                    if(logger.isDebugEnabled()) logger.debug("Rollback to partition " + firstRecord.get("partition")  + " offset " + firstRecord.get("offset"), e);
-//                                    consumer.seek(new TopicPartition((String)firstRecord.get("topic"), (Integer)firstRecord.get("partition")), (Long)firstRecord.get("offset"));
+                                        rollback(records.get(0));
                                     }
                                 }
                                 final CountDownLatch latch = new CountDownLatch(1);
@@ -168,17 +145,17 @@ public class ReactiveConsumerStartupHook implements StartupHookProvider {
                                     if(logger.isDebugEnabled()) logger.debug("statusCode = " + statusCode + " body  = " + body);
                                     if(statusCode >= 400) {
                                         // something happens on the backend and the data is not consumed correctly.
-//                                    Map<String, Object> firstRecord = list.get(0); // list is not empty at this point.
-//                                    if(logger.isDebugEnabled()) logger.debug("Rollback to partition " + firstRecord.get("partition")  + " offset " + firstRecord.get("offset"));
-//                                    consumer.seek(new TopicPartition((String)firstRecord.get("topic"), (Integer)firstRecord.get("partition")), (Long)firstRecord.get("offset"));
+                                        rollback(records.get(0));
                                     } else {
-                                        //consumer.commitSync();
+                                        // commit the batch offset here.
+                                        kafkaConsumerManager.commitCurrentOffsets(groupId, instanceId);
                                     }
                                 } catch (Exception  exception) {
-//                                Map<String, Object> firstRecord = list.get(0); // list is not empty at this point.
-//                                if(logger.isDebugEnabled()) logger.debug("Rollback to partition " + firstRecord.get("partition")  + " offset " + firstRecord.get("offset"), e);
-//                                consumer.seek(new TopicPartition((String)firstRecord.get("topic"), (Integer)firstRecord.get("partition")), (Long)firstRecord.get("offset"));
+                                    rollback(records.get(0));
                                 }
+                            } else {
+                                // Record size is zero. Do we need an extra period of sleep?
+                                if(logger.isTraceEnabled()) logger.trace("poll noting from the Kafka cluster");
                             }
                         }
                     }
@@ -186,5 +163,12 @@ public class ReactiveConsumerStartupHook implements StartupHookProvider {
         );
     }
 
-
+    private void rollback(ConsumerRecord firstRecord) {
+        ConsumerSeekRequest.PartitionOffset partitionOffset = new ConsumerSeekRequest.PartitionOffset(firstRecord.getTopic(), firstRecord.getPartition(), firstRecord.getOffset(), null);
+        List<ConsumerSeekRequest.PartitionOffset> offsets = new ArrayList<>();
+        offsets.add(partitionOffset);
+        ConsumerSeekRequest consumerSeekRequest = new ConsumerSeekRequest(offsets, null);
+        kafkaConsumerManager.seek(groupId, instanceId, consumerSeekRequest);
+        if(logger.isDebugEnabled()) logger.debug("Rollback to topic " + firstRecord.getTopic() + " partition " + firstRecord.getPartition() + " offset " + firstRecord.getOffset());
+    }
 }
