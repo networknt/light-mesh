@@ -19,6 +19,10 @@ keyFormat: jsonschema
 valueFormat: jsonschema
 # Waiting period in millisecond to poll another batch
 waitPeriod: 10000
+# Backend API host
+backendApiHost: https://localhost:8444
+# Backend API path
+backendApiPath: /kafka/records
 
 # Active Consumer Specific Configuration
 # default max consumer threads to 50.

@@ -127,7 +127,11 @@ public class ReactiveConsumerStartupHook implements StartupHookProvider {
                                 if(logger.isDebugEnabled()) logger.debug("polled records size = " + records.size());
                                 if(connection == null || !connection.isOpen()) {
                                     try {
-                                        connection = client.borrowConnection(new URI("https://localhost:8444"), Http2Client.WORKER, client.getDefaultXnioSsl(), Http2Client.BUFFER_POOL, OptionMap.create(UndertowOptions.ENABLE_HTTP2, true)).get();
+                                        if(config.getBackendApiHost().startsWith("https")) {
+                                            connection = client.borrowConnection(new URI(config.getBackendApiHost()), Http2Client.WORKER, client.getDefaultXnioSsl(), Http2Client.BUFFER_POOL, OptionMap.create(UndertowOptions.ENABLE_HTTP2, true)).get();
+                                        } else {
+                                            connection = client.borrowConnection(new URI(config.getBackendApiHost()), Http2Client.WORKER, Http2Client.BUFFER_POOL, OptionMap.EMPTY).get();
+                                        }
                                     } catch (Exception ex) {
                                         rollback(records.get(0));
                                     }
@@ -135,9 +139,10 @@ public class ReactiveConsumerStartupHook implements StartupHookProvider {
                                 final CountDownLatch latch = new CountDownLatch(1);
                                 final AtomicReference<ClientResponse> reference = new AtomicReference<>();
                                 try {
-                                    ClientRequest request = new ClientRequest().setMethod(Methods.POST).setPath("/kafka/records");
+                                    ClientRequest request = new ClientRequest().setMethod(Methods.POST).setPath(config.getBackendApiPath());
                                     request.getRequestHeaders().put(Headers.CONTENT_TYPE, "application/json");
                                     request.getRequestHeaders().put(Headers.TRANSFER_ENCODING, "chunked");
+                                    request.getRequestHeaders().put(Headers.HOST, "localhost");
                                     connection.sendRequest(request, client.createClientCallback(reference, latch, JsonMapper.toJson(records.stream().map(toJsonWrapper).collect(Collectors.toList()))));
                                     latch.await();
                                     int statusCode = reference.get().getResponseCode();
