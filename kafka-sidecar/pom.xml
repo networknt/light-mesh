@@ -64,6 +64,10 @@
             <url>https://jenkins-confluent-packages-beta-maven.s3.amazonaws.com/6.1.0-beta201006024150/1/maven/</url>
         </repository>
         <repository>
+            <id>jitpack.io</id>
+            <url>https://jitpack.io</url>
+        </repository>
+        <repository>
             <id>central</id>
             <url>
                 https://oss.sonatype.org/content/repositories/releases
