@@ -96,5 +96,14 @@ server.buildNumber: latest
 # secret.mysqlDatabasePassword: set-real-value-here
 # secret.oracleDatabasePassword: set-real-value-here
 
-# Service Singletons
-service.singletons:
+# Service Startup and Shutdown Hooks
+service.com.networknt.server.StartupHookProvider:
+  - com.networknt.mesh.kafka.ProducerStartupHook
+  # - com.networknt.mesh.kafka.ConsumerStartupHook
+  # - com.networknt.mesh.kafka.KsqldbConsumerStartupHook
+  - com.networknt.mesh.kafka.ReactiveConsumerStartupHook
+service.com.networknt.server.ShutdownHookProvider:
+  - com.networknt.mesh.kafka.ProducerShutdownHook
+  # - com.networknt.mesh.kafka.ConsumerShutdownHook
+  # - com.networknt.mesh.kafka.KsqldbConsumerShutdownHook
+  - com.networknt.mesh.kafka.ReactiveConsumerShutdownHook
