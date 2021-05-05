@@ -15,6 +15,9 @@ properties:
   # sasl.jaas.config: "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${kafka-consumer.username:username}\" password=\"${kafka-consumer.password:password}\";"
   # ssl.endpoint.identification.algorithm: ${kafka-consumer.ssl.endpoint.identification.algorithm:algo-name}
   # client.rack: ${kafka-consumer.client.rack:rack-name}
+  # basic authentication user:pass for the schema registry
+  # basic.auth.user.info: ${kafka-consumer.username:username}:${kafka-consumer.password:password}
+  # basic.auth.credentials.source: ${kafka-consumer.basic.auth.credentials.source:USER_INFO}
 
 # Reactive Consumer Specific Configuration
 # The topic that is going to be consumed. For reactive consumer only in the kafka-sidecar.
