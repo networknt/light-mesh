@@ -19,6 +19,9 @@ properties:
   # sasl.jaas.config: "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${kafka-producer.username:username}\" password=\"${kafka-producer.password:password}\";"
   # ssl.endpoint.identification.algorithm: ${kafka-producer.ssl.endpoint.identification.algorithm:algo-name}
   # client.rack: ${kafka-producer.client.rack:rack-name}
+  # basic authentication user:pass for the schema registry
+  # basic.auth.user.info: ${kafka-producer.username:username}:${kafka-producer.password:password}
+  # basic.auth.credentials.source: ${kafka-producer.basic.auth.credentials.source:USER_INFO}
 
 # The default topic for the producer. Only certain producer implementation will use it.
 topic: ${kafka-producer.topic:portal-event}
