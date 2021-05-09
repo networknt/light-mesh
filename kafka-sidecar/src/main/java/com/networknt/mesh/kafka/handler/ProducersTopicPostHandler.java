@@ -10,12 +10,16 @@ import com.networknt.handler.LightHttpHandler;
 import com.networknt.httpstring.AttachmentConstants;
 import com.networknt.httpstring.HttpStringConstants;
 import com.networknt.kafka.common.KafkaProducerConfig;
+import com.networknt.kafka.entity.AuditRecord;
+import com.networknt.kafka.entity.RecordProcessedResult;
 import com.networknt.kafka.producer.*;
 import com.networknt.mesh.kafka.ProducerStartupHook;
+import com.networknt.server.Server;
 import com.networknt.service.SingletonServiceFactory;
 import com.networknt.status.Status;
 import com.networknt.utility.Constants;
 import com.networknt.kafka.entity.EmbeddedFormat;
+import com.sun.mail.iap.ByteArray;
 import io.confluent.kafka.schemaregistry.avro.AvroSchemaProvider;
 import io.confluent.kafka.schemaregistry.client.CachedSchemaRegistryClient;
 import io.confluent.kafka.schemaregistry.client.SchemaRegistryClient;
@@ -28,15 +32,19 @@ import io.opentracing.propagation.Format;
 import io.opentracing.tag.Tags;
 import io.undertow.server.HttpServerExchange;
 import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.kafka.common.KafkaException;
 import org.apache.kafka.common.errors.AuthenticationException;
 import org.apache.kafka.common.errors.AuthorizationException;
 import org.apache.kafka.common.errors.RetriableException;
+import org.apache.kafka.common.header.Header;
 import org.apache.kafka.common.header.Headers;
 import org.apache.kafka.common.header.internals.RecordHeaders;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.*;
@@ -67,6 +75,7 @@ public class ProducersTopicPostHandler implements LightHttpHandler {
     private final NoSchemaRecordSerializer noSchemaRecordSerializer;
     private String callerId = "unknown";
     private KafkaProducerConfig config;
+    List<AuditRecord> auditRecords = new ArrayList<>();
 
     public ProducersTopicPostHandler() {
         SchemaRegistryClient schemaRegistryClient = new CachedSchemaRegistryClient(
@@ -129,6 +138,16 @@ public class ProducersTopicPostHandler implements LightHttpHandler {
         Headers headers = populateHeaders(exchange, config, topic);
         CompletableFuture<ProduceResponse> responseFuture = produceWithSchema(topic, Optional.empty(), produceRequest, headers);
         responseFuture.whenCompleteAsync((response, throwable) -> {
+            // write the audit log here.
+            synchronized (auditRecords) {
+                if (auditRecords != null && auditRecords.size() > 0) {
+                    auditRecords.forEach(ar -> {
+                        writeAuditLog(ar);
+                    });
+                    // clean up the audit entries
+                    auditRecords.clear();
+                }
+            }
             exchange.getResponseHeaders().put(io.undertow.util.Headers.CONTENT_TYPE, "application/json");
             exchange.getResponseSender().send(JsonMapper.toJson(response));
         });
@@ -385,12 +404,65 @@ public class ProducersTopicPostHandler implements LightHttpHandler {
                         headers),
                 (metadata, exception) -> {
                     if (exception != null) {
+                        // we cannot call the writeAuditLog in the callback function. It needs to be processed with another thread.
+                        if(config.isAuditEnabled()) {
+                            synchronized (auditRecords) {
+                                auditRecords.add(createAuditRecord(null, exception, headers, false));
+                            }
+                        }
                         result.completeExceptionally(exception);
                     } else {
+                        //writeAuditLog(metadata, null, headers, true);
+                        if(config.isAuditEnabled()) {
+                            synchronized (auditRecords) {
+                                auditRecords.add(createAuditRecord(metadata, null, headers, true));
+                            }
+                        }
                         result.complete(ProduceResult.fromRecordMetadata(metadata));
                     }
                 });
         return result;
     }
+    private AuditRecord createAuditRecord(RecordMetadata rmd, Exception e, Headers headers, boolean produced) {
+        AuditRecord auditRecord = new AuditRecord();
+        auditRecord.setId(UUID.randomUUID().toString());
+        auditRecord.setServiceId(Server.getServerConfig().getServiceId());
+        auditRecord.setAuditType(AuditRecord.AuditType.PRODUCER);
+        if(rmd != null) {
+            auditRecord.setTopic(rmd.topic());
+            auditRecord.setPartition(rmd.partition());
+            auditRecord.setOffset(rmd.offset());
+        } else {
+            StringWriter sw = new StringWriter();
+            PrintWriter pw = new PrintWriter(sw);
+            e.printStackTrace(pw);
+            auditRecord.setStacktrace(sw.toString());
+        }
+        Header cHeader = headers.lastHeader(Constants.CORRELATION_ID_STRING);
+        if(cHeader != null) {
+            auditRecord.setCorrelationId(new String(cHeader.value(), StandardCharsets.UTF_8));
+        }
 
+        Header tHeader = headers.lastHeader(Constants.TRACEABILITY_ID_STRING);
+        if(tHeader != null) {
+            auditRecord.setTraceabilityId(new String(tHeader.value(), StandardCharsets.UTF_8));
+        }
+        auditRecord.setAuditStatus(produced ? AuditRecord.AuditStatus.SUCCESS : AuditRecord.AuditStatus.FAILURE);
+        return auditRecord;
+    }
+
+    private void writeAuditLog(AuditRecord auditRecord) {
+        try {
+            ProducerStartupHook.producer.send(
+                    new ProducerRecord<>(
+                            config.getAuditTopic(),
+                            null,
+                            System.currentTimeMillis(),
+                            auditRecord.getCorrelationId().getBytes(StandardCharsets.UTF_8),
+                            JsonMapper.toJson(auditRecord).getBytes(StandardCharsets.UTF_8),
+                            null));
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
 }

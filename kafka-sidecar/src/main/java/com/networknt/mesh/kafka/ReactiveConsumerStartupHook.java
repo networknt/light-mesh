@@ -1,5 +1,6 @@
 package com.networknt.mesh.kafka;
 
+import com.google.protobuf.ByteString;
 import com.networknt.client.Http2Client;
 import com.networknt.config.Config;
 import com.networknt.config.JsonMapper;
@@ -7,6 +8,8 @@ import com.networknt.exception.FrameworkException;
 import com.networknt.kafka.common.KafkaConsumerConfig;
 import com.networknt.kafka.consumer.*;
 import com.networknt.kafka.entity.*;
+import com.networknt.kafka.producer.ProduceResult;
+import com.networknt.server.Server;
 import com.networknt.server.StartupHookProvider;
 import io.undertow.UndertowOptions;
 import io.undertow.client.ClientConnection;
@@ -14,11 +17,13 @@ import io.undertow.client.ClientRequest;
 import io.undertow.client.ClientResponse;
 import io.undertow.util.Headers;
 import io.undertow.util.Methods;
+import org.apache.kafka.clients.producer.ProducerRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xnio.OptionMap;
 
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.CountDownLatch;
@@ -152,6 +157,9 @@ public class ReactiveConsumerStartupHook implements StartupHookProvider {
                                         // something happens on the backend and the data is not consumed correctly.
                                         rollback(records.get(0));
                                     } else {
+                                        // The body will contains RecordProcessedResult for dead letter queue and audit.
+                                        // Write the dead letter queue if necessary.
+                                        produceResponse(body);
                                         // commit the batch offset here.
                                         kafkaConsumerManager.commitCurrentOffsets(groupId, instanceId);
                                     }
@@ -160,7 +168,7 @@ public class ReactiveConsumerStartupHook implements StartupHookProvider {
                                 }
                             } else {
                                 // Record size is zero. Do we need an extra period of sleep?
-                                if(logger.isTraceEnabled()) logger.trace("poll noting from the Kafka cluster");
+                                if(logger.isTraceEnabled()) logger.trace("poll nothing from the Kafka cluster");
                             }
                         }
                     }
@@ -172,8 +180,68 @@ public class ReactiveConsumerStartupHook implements StartupHookProvider {
         ConsumerSeekRequest.PartitionOffset partitionOffset = new ConsumerSeekRequest.PartitionOffset(firstRecord.getTopic(), firstRecord.getPartition(), firstRecord.getOffset(), null);
         List<ConsumerSeekRequest.PartitionOffset> offsets = new ArrayList<>();
         offsets.add(partitionOffset);
-        ConsumerSeekRequest consumerSeekRequest = new ConsumerSeekRequest(offsets, null);
+        List<ConsumerSeekRequest.PartitionTimestamp> timestamps = new ArrayList<>();
+        ConsumerSeekRequest consumerSeekRequest = new ConsumerSeekRequest(offsets, timestamps);
         kafkaConsumerManager.seek(groupId, instanceId, consumerSeekRequest);
         if(logger.isDebugEnabled()) logger.debug("Rollback to topic " + firstRecord.getTopic() + " partition " + firstRecord.getPartition() + " offset " + firstRecord.getOffset());
+    }
+
+    private void produceResponse(String responseBody) {
+         if(responseBody != null) {
+             List<Map<String, Object>> results = JsonMapper.string2List(responseBody);
+             for(int i = 0; i < results.size(); i ++) {
+                 RecordProcessedResult result = Config.getInstance().getMapper().convertValue(results.get(i), RecordProcessedResult.class);
+                 if(!result.isProcessed()) {
+                     ProducerStartupHook.producer.send(
+                             new ProducerRecord<>(
+                                     result.getRecord().getTopic() + config.getDeadLetterTopicExt(),
+                                     null,
+                                     System.currentTimeMillis(),
+                                     null,
+                                     JsonMapper.toJson(result).getBytes(StandardCharsets.UTF_8),
+                                     null),
+                             (metadata, exception) -> {
+                                 if (exception != null) {
+                                     // handle the exception by logging an error;
+                                     logger.error("Exception:" + exception);
+                                 } else {
+                                     if(logger.isTraceEnabled()) logger.trace("With to dead letter topic meta " + metadata.topic() + " " + metadata.partition() + " " + metadata.offset());
+                                 }
+                             });
+                 }
+                 if(config.isAuditEnabled()) writeAuditLog(result);
+             }
+         }
+
+    }
+
+    private void writeAuditLog(RecordProcessedResult result) {
+        AuditRecord auditRecord = new AuditRecord();
+        auditRecord.setId(UUID.randomUUID().toString());
+        auditRecord.setServiceId(Server.getServerConfig().getServiceId());
+        auditRecord.setAuditType(AuditRecord.AuditType.REACTIVE_CONSUMER);
+        auditRecord.setTopic(result.getRecord().getTopic());
+        auditRecord.setPartition(result.getRecord().getPartition());
+        auditRecord.setOffset(result.getRecord().getOffset());
+        auditRecord.setCorrelationId((String)result.getRecord().getHeaders().get("X-Correlation-Id"));
+        auditRecord.setTraceabilityId((String)result.getRecord().getHeaders().get("X-Traceability-Id"));
+        auditRecord.setAuditStatus(result.isProcessed() ? AuditRecord.AuditStatus.SUCCESS : AuditRecord.AuditStatus.FAILURE);
+        ProducerStartupHook.producer.send(
+                new ProducerRecord<>(
+                        config.getAuditTopic(),
+                        null,
+                        System.currentTimeMillis(),
+                        auditRecord.getCorrelationId().getBytes(StandardCharsets.UTF_8),
+                        JsonMapper.toJson(auditRecord).getBytes(StandardCharsets.UTF_8),
+                        null),
+                (metadata, exception) -> {
+                    if (exception != null) {
+                        // handle the exception by logging an error;
+                        logger.error("Exception:" + exception);
+                    } else {
+                        if(logger.isTraceEnabled()) logger.trace("Write to audit topic meta " + metadata.topic() + " " + metadata.partition() + " " + metadata.offset());
+                    }
+                });
+
     }
 }
