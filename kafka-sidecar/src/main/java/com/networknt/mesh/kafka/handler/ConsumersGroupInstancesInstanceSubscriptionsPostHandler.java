@@ -5,13 +5,11 @@ import com.networknt.config.Config;
 import com.networknt.exception.FrameworkException;
 import com.networknt.handler.LightHttpHandler;
 import com.networknt.kafka.entity.ConsumerSubscriptionRecord;
-import com.networknt.mesh.kafka.ConsumerStartupHook;
+import com.networknt.mesh.kafka.ActiveConsumerStartupHook;
 import io.undertow.server.HttpServerExchange;
-import io.undertow.util.HeaderMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Deque;
 import java.util.Map;
 
 /**
@@ -34,7 +32,7 @@ public class ConsumersGroupInstancesInstanceSubscriptionsPostHandler implements 
         ConsumerSubscriptionRecord subscription = Config.getInstance().getMapper().convertValue(map, ConsumerSubscriptionRecord.class);
         if(logger.isDebugEnabled()) logger.debug("group = " + group + " instance = " + instance + " subscription = " + subscription.toString());
         try {
-            ConsumerStartupHook.kafkaConsumerManager.subscribe(group, instance, subscription);
+            ActiveConsumerStartupHook.kafkaConsumerManager.subscribe(group, instance, subscription);
             exchange.setStatusCode(204);
             exchange.endExchange();
         } catch (FrameworkException e) {

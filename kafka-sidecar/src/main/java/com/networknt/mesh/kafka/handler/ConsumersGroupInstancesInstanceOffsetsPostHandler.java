@@ -9,7 +9,7 @@ import com.networknt.kafka.consumer.KafkaConsumerManager;
 import com.networknt.kafka.entity.CommitOffsetsResponse;
 import com.networknt.kafka.entity.ConsumerOffsetCommitRequest;
 import com.networknt.kafka.entity.TopicPartitionOffset;
-import com.networknt.mesh.kafka.ConsumerStartupHook;
+import com.networknt.mesh.kafka.ActiveConsumerStartupHook;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
 import org.slf4j.Logger;
@@ -43,7 +43,7 @@ public class ConsumersGroupInstancesInstanceOffsetsPostHandler implements LightH
         ConsumerOffsetCommitRequest request = Config.getInstance().getMapper().convertValue(map, ConsumerOffsetCommitRequest.class);
         if(logger.isDebugEnabled()) logger.debug("group = " + group + " instance = " + instance + "async = " + async  + " request = " + request);
         exchange.dispatch();
-        ConsumerStartupHook.kafkaConsumerManager.commitOffsets(
+        ActiveConsumerStartupHook.kafkaConsumerManager.commitOffsets(
                 group,
                 instance,
                 async,

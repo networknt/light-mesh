@@ -7,15 +7,12 @@ import com.networknt.exception.FrameworkException;
 import com.networknt.handler.LightHttpHandler;
 import com.networknt.kafka.entity.ConsumerAssignmentRequest;
 import com.networknt.kafka.entity.ConsumerAssignmentResponse;
-import com.networknt.kafka.entity.ConsumerSubscriptionResponse;
-import com.networknt.mesh.kafka.ConsumerStartupHook;
+import com.networknt.mesh.kafka.ActiveConsumerStartupHook;
 import io.undertow.server.HttpServerExchange;
-import io.undertow.util.HeaderMap;
 import io.undertow.util.Headers;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Deque;
 import java.util.Map;
 
 /**
@@ -37,7 +34,7 @@ public class ConsumersGroupInstancesInstanceAssignmentsGetHandler implements Lig
         ConsumerAssignmentRequest request = Config.getInstance().getMapper().convertValue(map, ConsumerAssignmentRequest.class);
         if(logger.isDebugEnabled()) logger.debug("group = " + group + " instance = " + instance + " request = " + request);
         try {
-            ConsumerAssignmentResponse response = ConsumerStartupHook.kafkaConsumerManager.assignment(group, instance);
+            ConsumerAssignmentResponse response = ActiveConsumerStartupHook.kafkaConsumerManager.assignment(group, instance);
             exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "application/json");
             exchange.setStatusCode(200);
             exchange.getResponseSender().send(JsonMapper.toJson(response));

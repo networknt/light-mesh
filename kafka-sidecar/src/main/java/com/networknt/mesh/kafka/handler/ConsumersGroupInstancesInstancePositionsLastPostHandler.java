@@ -4,15 +4,12 @@ import com.networknt.body.BodyHandler;
 import com.networknt.config.Config;
 import com.networknt.exception.FrameworkException;
 import com.networknt.handler.LightHttpHandler;
-import com.networknt.kafka.entity.ConsumerSeekRequest;
 import com.networknt.kafka.entity.ConsumerSeekToRequest;
-import com.networknt.mesh.kafka.ConsumerStartupHook;
+import com.networknt.mesh.kafka.ActiveConsumerStartupHook;
 import io.undertow.server.HttpServerExchange;
-import io.undertow.util.HeaderMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Deque;
 import java.util.Map;
 
 /**
@@ -34,7 +31,7 @@ public class ConsumersGroupInstancesInstancePositionsLastPostHandler implements 
         ConsumerSeekToRequest request = Config.getInstance().getMapper().convertValue(map, ConsumerSeekToRequest.class);
         if(logger.isDebugEnabled()) logger.debug("group = " + group + " instance = " + instance + " request = " + request);
         try {
-            ConsumerStartupHook.kafkaConsumerManager.seekToBeginning(group, instance, request);
+            ActiveConsumerStartupHook.kafkaConsumerManager.seekToBeginning(group, instance, request);
             exchange.setStatusCode(204);
             exchange.endExchange();
         } catch (FrameworkException e) {

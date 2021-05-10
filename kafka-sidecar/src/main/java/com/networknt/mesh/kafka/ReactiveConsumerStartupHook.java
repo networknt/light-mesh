@@ -1,6 +1,5 @@
 package com.networknt.mesh.kafka;
 
-import com.google.protobuf.ByteString;
 import com.networknt.client.Http2Client;
 import com.networknt.config.Config;
 import com.networknt.config.JsonMapper;
@@ -8,9 +7,9 @@ import com.networknt.exception.FrameworkException;
 import com.networknt.kafka.common.KafkaConsumerConfig;
 import com.networknt.kafka.consumer.*;
 import com.networknt.kafka.entity.*;
-import com.networknt.kafka.producer.ProduceResult;
 import com.networknt.server.Server;
 import com.networknt.server.StartupHookProvider;
+import com.networknt.utility.ModuleRegistry;
 import io.undertow.UndertowOptions;
 import io.undertow.client.ClientConnection;
 import io.undertow.client.ClientRequest;
@@ -46,7 +45,7 @@ public class ReactiveConsumerStartupHook implements StartupHookProvider {
     String instanceId;
     String groupId;
     // An indicator that will break the consumer loop so that the consume can be closed. It is set
-    // by the CallbackConsumerShutdownHook to do the clean up.
+    // by the ReactiveConsumerShutdownHook to do the clean up.
     public static boolean done = false;
 
     @Override
@@ -69,6 +68,10 @@ public class ReactiveConsumerStartupHook implements StartupHookProvider {
         }
         kafkaConsumerManager.subscribe(groupId, instanceId, subscription);
         runConsumer();
+        List<String> masks = new ArrayList<>();
+        masks.add("basic.auth.user.info");
+        masks.add("sasl.jaas.config");
+        ModuleRegistry.registerModule(ReactiveConsumerStartupHook.class.getName(), Config.getInstance().getJsonMapConfigNoCache(KafkaConsumerConfig.CONFIG_NAME), masks);
         logger.debug("ReactiveConsumerStartupHook ends");
     }
 
