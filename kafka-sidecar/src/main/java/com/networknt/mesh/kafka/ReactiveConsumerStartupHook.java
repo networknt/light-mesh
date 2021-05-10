@@ -194,7 +194,7 @@ public class ReactiveConsumerStartupHook implements StartupHookProvider {
              List<Map<String, Object>> results = JsonMapper.string2List(responseBody);
              for(int i = 0; i < results.size(); i ++) {
                  RecordProcessedResult result = Config.getInstance().getMapper().convertValue(results.get(i), RecordProcessedResult.class);
-                 if(!result.isProcessed()) {
+                 if(config.isDeadLetterEnabled() && !result.isProcessed()) {
                      ProducerStartupHook.producer.send(
                              new ProducerRecord<>(
                                      result.getRecord().getTopic() + config.getDeadLetterTopicExt(),
@@ -208,7 +208,7 @@ public class ReactiveConsumerStartupHook implements StartupHookProvider {
                                      // handle the exception by logging an error;
                                      logger.error("Exception:" + exception);
                                  } else {
-                                     if(logger.isTraceEnabled()) logger.trace("With to dead letter topic meta " + metadata.topic() + " " + metadata.partition() + " " + metadata.offset());
+                                     if(logger.isTraceEnabled()) logger.trace("Write to dead letter topic meta " + metadata.topic() + " " + metadata.partition() + " " + metadata.offset());
                                  }
                              });
                  }
