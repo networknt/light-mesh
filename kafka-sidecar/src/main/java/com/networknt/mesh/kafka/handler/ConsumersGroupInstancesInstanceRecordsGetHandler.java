@@ -8,7 +8,7 @@ import com.networknt.kafka.entity.BinaryConsumerRecord;
 import com.networknt.kafka.entity.ConsumerRecord;
 import com.networknt.kafka.entity.JsonConsumerRecord;
 import com.networknt.kafka.entity.SchemaConsumerRecord;
-import com.networknt.mesh.kafka.ConsumerStartupHook;
+import com.networknt.mesh.kafka.ActiveConsumerStartupHook;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
 import org.slf4j.Logger;
@@ -94,7 +94,7 @@ public class ConsumersGroupInstancesInstanceRecordsGetHandler implements LightHt
             Function<ConsumerRecord<ClientKeyT, ClientValueT>, ?> toJsonWrapper
     ) {
         maxBytes = (maxBytes <= 0) ? Long.MAX_VALUE : maxBytes;
-        ConsumerStartupHook.kafkaConsumerManager.readRecords(
+        ActiveConsumerStartupHook.kafkaConsumerManager.readRecords(
                 group, instance, consumerStateType, timeout, maxBytes,
                 new ConsumerReadCallback<ClientKeyT, ClientValueT>() {
                     @Override

@@ -1,18 +1,11 @@
 package com.networknt.mesh.kafka.handler;
 
-import com.networknt.body.BodyHandler;
-import com.networknt.config.Config;
 import com.networknt.exception.FrameworkException;
 import com.networknt.handler.LightHttpHandler;
-import com.networknt.kafka.entity.ConsumerSubscriptionRecord;
-import com.networknt.mesh.kafka.ConsumerStartupHook;
+import com.networknt.mesh.kafka.ActiveConsumerStartupHook;
 import io.undertow.server.HttpServerExchange;
-import io.undertow.util.HeaderMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.Deque;
-import java.util.Map;
 
 /**
 For more information on how to write business handlers, please check the link below.
@@ -32,7 +25,7 @@ public class ConsumersGroupInstancesInstanceSubscriptionsDeleteHandler implement
         String instance = exchange.getPathParameters().get("instance").getFirst();
         if(logger.isDebugEnabled()) logger.debug("group = " + group + " instance = " + instance);
         try {
-            ConsumerStartupHook.kafkaConsumerManager.unsubscribe(group, instance);
+            ActiveConsumerStartupHook.kafkaConsumerManager.unsubscribe(group, instance);
             exchange.setStatusCode(204);
             exchange.endExchange();
         } catch (FrameworkException e) {

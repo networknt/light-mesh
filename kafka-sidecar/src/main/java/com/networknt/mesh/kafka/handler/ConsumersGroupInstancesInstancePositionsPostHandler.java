@@ -2,21 +2,14 @@ package com.networknt.mesh.kafka.handler;
 
 import com.networknt.body.BodyHandler;
 import com.networknt.config.Config;
-import com.networknt.config.JsonMapper;
 import com.networknt.exception.FrameworkException;
 import com.networknt.handler.LightHttpHandler;
-import com.networknt.kafka.entity.ConsumerCommittedRequest;
-import com.networknt.kafka.entity.ConsumerCommittedResponse;
 import com.networknt.kafka.entity.ConsumerSeekRequest;
-import com.networknt.kafka.entity.ConsumerSeekToRequest;
-import com.networknt.mesh.kafka.ConsumerStartupHook;
+import com.networknt.mesh.kafka.ActiveConsumerStartupHook;
 import io.undertow.server.HttpServerExchange;
-import io.undertow.util.HeaderMap;
-import io.undertow.util.Headers;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Deque;
 import java.util.Map;
 
 /**
@@ -38,7 +31,7 @@ public class ConsumersGroupInstancesInstancePositionsPostHandler implements Ligh
         ConsumerSeekRequest request = Config.getInstance().getMapper().convertValue(map, ConsumerSeekRequest.class);
         if(logger.isDebugEnabled()) logger.debug("group = " + group + " instance = " + instance + " request = " + request);
         try {
-            ConsumerStartupHook.kafkaConsumerManager.seek(group, instance, request);
+            ActiveConsumerStartupHook.kafkaConsumerManager.seek(group, instance, request);
             exchange.setStatusCode(204);
             exchange.endExchange();
         } catch (FrameworkException e) {

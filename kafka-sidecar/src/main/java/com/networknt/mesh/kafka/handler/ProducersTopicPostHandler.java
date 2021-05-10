@@ -11,7 +11,6 @@ import com.networknt.httpstring.AttachmentConstants;
 import com.networknt.httpstring.HttpStringConstants;
 import com.networknt.kafka.common.KafkaProducerConfig;
 import com.networknt.kafka.entity.AuditRecord;
-import com.networknt.kafka.entity.RecordProcessedResult;
 import com.networknt.kafka.producer.*;
 import com.networknt.mesh.kafka.ProducerStartupHook;
 import com.networknt.server.Server;
@@ -19,11 +18,10 @@ import com.networknt.service.SingletonServiceFactory;
 import com.networknt.status.Status;
 import com.networknt.utility.Constants;
 import com.networknt.kafka.entity.EmbeddedFormat;
-import com.sun.mail.iap.ByteArray;
+import com.networknt.utility.ModuleRegistry;
 import io.confluent.kafka.schemaregistry.avro.AvroSchemaProvider;
 import io.confluent.kafka.schemaregistry.client.CachedSchemaRegistryClient;
 import io.confluent.kafka.schemaregistry.client.SchemaRegistryClient;
-import io.confluent.kafka.schemaregistry.client.rest.exceptions.RestClientException;
 import io.confluent.kafka.schemaregistry.json.JsonSchemaProvider;
 import io.confluent.kafka.schemaregistry.protobuf.ProtobufSchemaProvider;
 import io.confluent.kafka.serializers.subject.TopicNameStrategy;
@@ -98,7 +96,11 @@ public class ProducersTopicPostHandler implements LightHttpHandler {
                 callerId = (String)serverConfig.get("serviceId");
             }
         }
-
+        // register the module with the configuration properties.
+        List<String> masks = new ArrayList<>();
+        masks.add("basic.auth.user.info");
+        masks.add("sasl.jaas.config");
+        ModuleRegistry.registerModule(ProducersTopicPostHandler.class.getName(), Config.getInstance().getJsonMapConfigNoCache(KafkaProducerConfig.CONFIG_NAME), masks);
     }
 
     /*

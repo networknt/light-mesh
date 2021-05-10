@@ -4,18 +4,14 @@ import com.networknt.body.BodyHandler;
 import com.networknt.config.Config;
 import com.networknt.config.JsonMapper;
 import com.networknt.handler.LightHttpHandler;
-import com.networknt.kafka.entity.CommitOffsetsResponse;
 import com.networknt.kafka.entity.ConsumerCommittedRequest;
 import com.networknt.kafka.entity.ConsumerCommittedResponse;
-import com.networknt.kafka.entity.ConsumerOffsetCommitRequest;
-import com.networknt.mesh.kafka.ConsumerStartupHook;
+import com.networknt.mesh.kafka.ActiveConsumerStartupHook;
 import io.undertow.server.HttpServerExchange;
-import io.undertow.util.HeaderMap;
 import io.undertow.util.Headers;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Deque;
 import java.util.Map;
 
 /**
@@ -36,7 +32,7 @@ public class ConsumersGroupInstancesInstanceOffsetsPutHandler implements LightHt
         Map<String, Object> map = (Map)exchange.getAttachment(BodyHandler.REQUEST_BODY);
         ConsumerCommittedRequest request = Config.getInstance().getMapper().convertValue(map, ConsumerCommittedRequest.class);
         if(logger.isDebugEnabled()) logger.debug("group = " + group + " instance = " + instance + " request = " + request);
-        ConsumerCommittedResponse response = ConsumerStartupHook.kafkaConsumerManager.committed(group, instance, request);
+        ConsumerCommittedResponse response = ActiveConsumerStartupHook.kafkaConsumerManager.committed(group, instance, request);
         exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "application/json");
         exchange.setStatusCode(200);
         exchange.getResponseSender().send(JsonMapper.toJson(response));
