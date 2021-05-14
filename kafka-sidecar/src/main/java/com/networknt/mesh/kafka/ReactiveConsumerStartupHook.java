@@ -141,6 +141,7 @@ public class ReactiveConsumerStartupHook implements StartupHookProvider {
                                             connection = client.borrowConnection(new URI(config.getBackendApiHost()), Http2Client.WORKER, Http2Client.BUFFER_POOL, OptionMap.EMPTY).get();
                                         }
                                     } catch (Exception ex) {
+                                        logger.error("Rollback due to connection error to the backend: ", ex);
                                         rollback(records.get(0));
                                     }
                                 }
@@ -158,15 +159,17 @@ public class ReactiveConsumerStartupHook implements StartupHookProvider {
                                     if(logger.isDebugEnabled()) logger.debug("statusCode = " + statusCode + " body  = " + body);
                                     if(statusCode >= 400) {
                                         // something happens on the backend and the data is not consumed correctly.
+                                        logger.error("Rollback due to error response from backend with status code = " + statusCode + " body = " + body);
                                         rollback(records.get(0));
                                     } else {
                                         // The body will contains RecordProcessedResult for dead letter queue and audit.
                                         // Write the dead letter queue if necessary.
-                                        produceResponse(body);
+                                        processResponse(body);
                                         // commit the batch offset here.
                                         kafkaConsumerManager.commitCurrentOffsets(groupId, instanceId);
                                     }
-                                } catch (Exception  exception) {
+                                } catch (Exception exception) {
+                                    logger.error("Rollback due to process response exception: ", exception);
                                     rollback(records.get(0));
                                 }
                             } else {
@@ -189,7 +192,7 @@ public class ReactiveConsumerStartupHook implements StartupHookProvider {
         if(logger.isDebugEnabled()) logger.debug("Rollback to topic " + firstRecord.getTopic() + " partition " + firstRecord.getPartition() + " offset " + firstRecord.getOffset());
     }
 
-    private void produceResponse(String responseBody) {
+    private void processResponse(String responseBody) {
          if(responseBody != null) {
              List<Map<String, Object>> results = JsonMapper.string2List(responseBody);
              for(int i = 0; i < results.size(); i ++) {
