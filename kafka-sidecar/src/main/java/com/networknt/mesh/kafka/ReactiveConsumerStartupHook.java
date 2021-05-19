@@ -47,6 +47,8 @@ public class ReactiveConsumerStartupHook implements StartupHookProvider {
     // An indicator that will break the consumer loop so that the consume can be closed. It is set
     // by the ReactiveConsumerShutdownHook to do the clean up.
     public static boolean done = false;
+    // send the next batch only when the response for the previous batch is returned.
+    public static boolean readyForNextBatch = false;
 
     @Override
     public void onStartup() {
@@ -84,6 +86,7 @@ public class ReactiveConsumerStartupHook implements StartupHookProvider {
         @Override
         public void run() {
             while (!done) {
+                readyForNextBatch = false;
                 switch(config.getValueFormat()) {
                     case "binary":
                         readRecords(
@@ -103,12 +106,15 @@ public class ReactiveConsumerStartupHook implements StartupHookProvider {
                                 SchemaConsumerRecord::fromConsumerRecord);
                         break;
                 }
-                try {
-                    // wait a period of time before the next poll if there is no record
-                    Thread.sleep(config.getWaitPeriod());
-                } catch (InterruptedException e) {
-                    logger.error("InterruptedException", e);
-                    // ignore it.
+                while(!readyForNextBatch) {
+                    // wait until the previous batch returns.
+                    try {
+                        // wait a period of time before the next poll if there is no record
+                        Thread.sleep(config.getWaitPeriod());
+                    } catch (InterruptedException e) {
+                        logger.error("InterruptedException", e);
+                        // ignore it.
+                    }
                 }
             }
         }
@@ -143,6 +149,7 @@ public class ReactiveConsumerStartupHook implements StartupHookProvider {
                                     } catch (Exception ex) {
                                         logger.error("Rollback due to connection error to the backend: ", ex);
                                         rollback(records.get(0));
+                                        readyForNextBatch = true;
                                     }
                                 }
                                 final CountDownLatch latch = new CountDownLatch(1);
@@ -161,20 +168,24 @@ public class ReactiveConsumerStartupHook implements StartupHookProvider {
                                         // something happens on the backend and the data is not consumed correctly.
                                         logger.error("Rollback due to error response from backend with status code = " + statusCode + " body = " + body);
                                         rollback(records.get(0));
+                                        readyForNextBatch = true;
                                     } else {
                                         // The body will contains RecordProcessedResult for dead letter queue and audit.
                                         // Write the dead letter queue if necessary.
                                         processResponse(body);
                                         // commit the batch offset here.
                                         kafkaConsumerManager.commitCurrentOffsets(groupId, instanceId);
+                                        readyForNextBatch = true;
                                     }
                                 } catch (Exception exception) {
                                     logger.error("Rollback due to process response exception: ", exception);
                                     rollback(records.get(0));
+                                    readyForNextBatch = true;
                                 }
                             } else {
                                 // Record size is zero. Do we need an extra period of sleep?
                                 if(logger.isTraceEnabled()) logger.trace("poll nothing from the Kafka cluster");
+                                readyForNextBatch = true;
                             }
                         }
                     }
