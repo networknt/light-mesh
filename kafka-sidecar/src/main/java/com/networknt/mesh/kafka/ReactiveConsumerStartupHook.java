@@ -159,6 +159,7 @@ public class ReactiveConsumerStartupHook implements StartupHookProvider {
                                     request.getRequestHeaders().put(Headers.CONTENT_TYPE, "application/json");
                                     request.getRequestHeaders().put(Headers.TRANSFER_ENCODING, "chunked");
                                     request.getRequestHeaders().put(Headers.HOST, "localhost");
+                                    if(logger.isInfoEnabled()) logger.info("Send a batch to the backend API");
                                     connection.sendRequest(request, client.createClientCallback(reference, latch, JsonMapper.toJson(records.stream().map(toJsonWrapper).collect(Collectors.toList()))));
                                     latch.await();
                                     int statusCode = reference.get().getResponseCode();
@@ -172,6 +173,7 @@ public class ReactiveConsumerStartupHook implements StartupHookProvider {
                                     } else {
                                         // The body will contains RecordProcessedResult for dead letter queue and audit.
                                         // Write the dead letter queue if necessary.
+                                        if(logger.isInfoEnabled()) logger.info("Got successful response from the backend API");
                                         processResponse(body);
                                         // commit the batch offset here.
                                         kafkaConsumerManager.commitCurrentOffsets(groupId, instanceId);
