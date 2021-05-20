@@ -18,6 +18,11 @@ properties:
   # basic authentication user:pass for the schema registry
   # basic.auth.user.info: ${kafka-consumer.username:username}:${kafka-consumer.password:password}
   # basic.auth.credentials.source: ${kafka-consumer.basic.auth.credentials.source:USER_INFO}
+  # max fetch size from Kafka cluster. Default 50mb is too big for cache consumption on the sidecar
+  fetch.max.bytes: ${kafka-consumer.fetch.max.bytes:65536}
+  # max pol records default is 500. Adjust it based on the size of the records to make sure each poll
+  # is similar to requestMaxBytes down below.
+  max.poll.records: ${kafka-consumer.max.poll.records:100}
 
 # common configuration properties between active and reactive consumers
 # Indicator if the dead letter topic is enabled.
