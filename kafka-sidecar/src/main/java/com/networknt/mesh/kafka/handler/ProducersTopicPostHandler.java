@@ -76,20 +76,20 @@ public class ProducersTopicPostHandler implements LightHttpHandler {
     List<AuditRecord> auditRecords = new ArrayList<>();
 
     public ProducersTopicPostHandler() {
+        SidecarProducer lightProducer = (SidecarProducer) SingletonServiceFactory.getBean(NativeLightProducer.class);
+        config = lightProducer.config;
         SchemaRegistryClient schemaRegistryClient = new CachedSchemaRegistryClient(
-                singletonList("http://localhost:8081"),
+                singletonList(config.getSchemaRegistryUrl()),
                 100,
                 Arrays.asList(
                         new AvroSchemaProvider(), new JsonSchemaProvider(), new ProtobufSchemaProvider()),
                 emptyMap()
                 );
         Map<String, Object> configs = new HashMap<>();
-        configs.put("schema.registry.url", "http://localhost:8081");
+        configs.put("schema.registry.url", config.getSchemaRegistryUrl());
         noSchemaRecordSerializer = new NoSchemaRecordSerializer(new HashMap<>());
         schemaRecordSerializer = new SchemaRecordSerializer(schemaRegistryClient,configs, configs, configs);
         schemaManager = new SchemaManagerImpl(schemaRegistryClient, new TopicNameStrategy());
-        SidecarProducer lightProducer = (SidecarProducer) SingletonServiceFactory.getBean(NativeLightProducer.class);
-        config = lightProducer.config;
         if(config.isInjectCallerId()) {
             Map<String, Object> serverConfig = Config.getInstance().getJsonMapConfigNoCache("server");
             if(serverConfig != null) {
