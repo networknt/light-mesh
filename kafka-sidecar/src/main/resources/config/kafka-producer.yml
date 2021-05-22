@@ -37,6 +37,10 @@ injectCallerId: ${kafka-producer.injectCallerId:false}
 schemaRegistryUrl: ${kafka-producer.schemaRegistryUrl:http://localhost:8081}
 # Schema registry identity cache size
 schemaRegistryCache: ${kafka-producer.schemaRegistryCache:100}
+# Schema registry client truststore location
+schemaRegistryTruststorePath: ${kafka-producer.schemaRegistryTruststorePath:/config/client.truststore}
+# Schema registry client truststore password
+schemaRegistryTruststorePass: ${kafka-producer.schemaRegistryTruststorePass:password}
 # Indicator if the audit is enabled.
 auditEnabled: ${kafka-producer.auditEnabled:true}
 # The producer audit topic name
