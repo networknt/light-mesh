@@ -82,7 +82,7 @@ public class ProducersTopicPostHandler implements LightHttpHandler {
         Map<String, Object> configs = new HashMap<>();
         configs.putAll(config.getProperties());
         String url = (String)config.getProperties().get("schema.registry.url");
-        Object cacheObj =  config.getProperties().get("schema.registry.url");
+        Object cacheObj =  config.getProperties().get("schema.registry.cache");
         int cache = 100;
         if(cacheObj != null && cacheObj instanceof String) {
             cache = Integer.valueOf((String)cacheObj);
