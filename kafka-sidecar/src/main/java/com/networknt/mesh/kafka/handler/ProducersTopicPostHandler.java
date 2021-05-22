@@ -22,6 +22,7 @@ import com.networknt.utility.ModuleRegistry;
 import io.confluent.kafka.schemaregistry.avro.AvroSchemaProvider;
 import io.confluent.kafka.schemaregistry.client.CachedSchemaRegistryClient;
 import io.confluent.kafka.schemaregistry.client.SchemaRegistryClient;
+import io.confluent.kafka.schemaregistry.client.rest.RestService;
 import io.confluent.kafka.schemaregistry.json.JsonSchemaProvider;
 import io.confluent.kafka.schemaregistry.protobuf.ProtobufSchemaProvider;
 import io.confluent.kafka.serializers.subject.TopicNameStrategy;
@@ -78,15 +79,18 @@ public class ProducersTopicPostHandler implements LightHttpHandler {
     public ProducersTopicPostHandler() {
         SidecarProducer lightProducer = (SidecarProducer) SingletonServiceFactory.getBean(NativeLightProducer.class);
         config = lightProducer.config;
+        Map<String, Object> configs = new HashMap<>();
+        configs.put("schema.registry.url", config.getSchemaRegistryUrl());
+        configs.put("ssl.truststore.location", config.getSchemaRegistryTruststorePath());
+        configs.put("ssl.truststore.password", config.getSchemaRegistryTruststorePass());
         SchemaRegistryClient schemaRegistryClient = new CachedSchemaRegistryClient(
-                singletonList(config.getSchemaRegistryUrl()),
+                new RestService(singletonList(config.getSchemaRegistryUrl())),
                 100,
                 Arrays.asList(
                         new AvroSchemaProvider(), new JsonSchemaProvider(), new ProtobufSchemaProvider()),
-                emptyMap()
-                );
-        Map<String, Object> configs = new HashMap<>();
-        configs.put("schema.registry.url", config.getSchemaRegistryUrl());
+                configs,
+                null
+        );
         noSchemaRecordSerializer = new NoSchemaRecordSerializer(new HashMap<>());
         schemaRecordSerializer = new SchemaRecordSerializer(schemaRegistryClient,configs, configs, configs);
         schemaManager = new SchemaManagerImpl(schemaRegistryClient, new TopicNameStrategy());
@@ -100,6 +104,7 @@ public class ProducersTopicPostHandler implements LightHttpHandler {
         List<String> masks = new ArrayList<>();
         masks.add("basic.auth.user.info");
         masks.add("sasl.jaas.config");
+        masks.add("schemaRegistryTruststorePass");
         ModuleRegistry.registerModule(ProducersTopicPostHandler.class.getName(), Config.getInstance().getJsonMapConfigNoCache(KafkaProducerConfig.CONFIG_NAME), masks);
     }
 
