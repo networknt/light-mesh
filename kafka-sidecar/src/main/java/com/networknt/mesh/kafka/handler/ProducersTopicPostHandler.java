@@ -80,14 +80,17 @@ public class ProducersTopicPostHandler implements LightHttpHandler {
         SidecarProducer lightProducer = (SidecarProducer) SingletonServiceFactory.getBean(NativeLightProducer.class);
         config = lightProducer.config;
         Map<String, Object> configs = new HashMap<>();
-        configs.put("schema.registry.url", config.getSchemaRegistryUrl());
-        configs.put("ssl.truststore.location", config.getSchemaRegistryTruststorePath());
-        configs.put("ssl.truststore.password", config.getSchemaRegistryTruststorePass());
+        configs.putAll(config.getProperties());
+        String url = (String)config.getProperties().get("schema.registry.url");
+        Object cacheObj =  config.getProperties().get("schema.registry.url");
+        int cache = 100;
+        if(cacheObj != null && cacheObj instanceof String) {
+            cache = Integer.valueOf((String)cacheObj);
+        }
         SchemaRegistryClient schemaRegistryClient = new CachedSchemaRegistryClient(
-                new RestService(singletonList(config.getSchemaRegistryUrl())),
-                100,
-                Arrays.asList(
-                        new AvroSchemaProvider(), new JsonSchemaProvider(), new ProtobufSchemaProvider()),
+                new RestService(singletonList(url)),
+                cache,
+                Arrays.asList(new AvroSchemaProvider(), new JsonSchemaProvider(), new ProtobufSchemaProvider()),
                 configs,
                 null
         );

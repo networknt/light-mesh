@@ -13,6 +13,14 @@ properties:
   linger.ms: ${kafka-producer.linger.ms:1}
   max.in.flight.requests.per.connection: ${kafka-producer.max.in.flight.requests.per.connection:5}
   enable.idempotence: ${kafka-producer.enable.idempotence:true}
+  # Confluent schema registry url
+  schema.registry.url: ${kafka-producer.schema.registry.url:http://localhost:8081}
+  # Schema registry identity cache size
+  schema.registry.cache: ${kafka-producer.schema.registry.cache:100}
+  # Schema registry client truststore location
+  schema.registry.ssl.truststore.location: ${kafka-producer.schema.registry.ssl.truststore.location:/config/client.truststore}
+  # Schema registry client truststore password
+  schema.registry.ssl.truststore.password: ${kafka-producer.schema.registry.ssl.truststore.password:password}
   # security configuration for enterprise deployment
   # security.protocol: ${kafka-producer.security.protocol:SASL_SSL}
   # sasl.mechanism: ${kafka-producer.sasl.mechanism:PLAIN}
@@ -22,10 +30,6 @@ properties:
   # basic authentication user:pass for the schema registry
   # basic.auth.user.info: ${kafka-producer.username:username}:${kafka-producer.password:password}
   # basic.auth.credentials.source: ${kafka-producer.basic.auth.credentials.source:USER_INFO}
-  # Schema registry client truststore location
-  ssl.truststore.location: ${kafka-producer.ssl.truststore.location:/config/client.truststore}
-  # Schema registry client truststore password
-  ssl.truststore.password: ${kafka-producer.ssl.truststore.password:password}
 
 # The default topic for the producer. Only certain producer implementation will use it.
 topic: ${kafka-producer.topic:portal-event}
@@ -33,14 +37,6 @@ topic: ${kafka-producer.topic:portal-event}
 injectOpenTracing: ${kafka-producer.injectOpenTracing:false}
 # Inject serviceId as callerId into the http header for metrics to collect the caller. The serviceId is from server.yml
 injectCallerId: ${kafka-producer.injectCallerId:false}
-# Confluent schema registry url
-schemaRegistryUrl: ${kafka-producer.schemaRegistryUrl:http://localhost:8081}
-# Schema registry identity cache size
-schemaRegistryCache: ${kafka-producer.schemaRegistryCache:100}
-# Schema registry client truststore location
-schemaRegistryTruststorePath: ${kafka-producer.schemaRegistryTruststorePath:/config/client.truststore}
-# Schema registry client truststore password
-schemaRegistryTruststorePass: ${kafka-producer.schemaRegistryTruststorePass:password}
 # Indicator if the audit is enabled.
 auditEnabled: ${kafka-producer.auditEnabled:true}
 # The producer audit topic name

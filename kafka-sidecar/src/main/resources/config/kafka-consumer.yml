@@ -8,7 +8,12 @@ properties:
   enable.auto.commit: false
   auto.offset.reset: ${kafka-consumer.auto.offset.reset:earliest}
   group.id: ${kafka-consumer.group.id:group1}
+  # Schema registry url
   schema.registry.url: ${kafka-consumer.schema.registry.url:http://localhost:8081}
+  # Schema registry client truststore location
+  schema.registry.ssl.truststore.location: ${kafka-consumer.schema.registry.ssl.truststore.location:/config/client.truststore}
+  # Schema registry client truststore password
+  schema.registry.ssl.truststore.password: ${kafka-consumer.schema.registry.ssl.truststore.password:password}
   # security configuration for enterprise deployment
   # security.protocol: ${kafka-consumer.security.protocol:SASL_SSL}
   # sasl.mechanism: ${kafka-consumer.sasl.mechanism:PLAIN}
