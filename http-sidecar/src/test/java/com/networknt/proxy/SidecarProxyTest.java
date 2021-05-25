@@ -110,6 +110,13 @@ public class SidecarProxyTest {
                     exchange.getResponseSender().send(requestBody);
                 }
             })
+            .get("/timeout", new HttpHandler() {
+                @Override
+                public void handleRequest(HttpServerExchange httpServerExchange) throws Exception {
+                    // every three requests will have a timeout with sleep in the code.
+
+                }
+            })
             .setFallbackHandler(new HttpHandler() {
                 @Override
                 public void handleRequest(HttpServerExchange exchange) throws Exception {
@@ -183,6 +190,42 @@ public class SidecarProxyTest {
         }
         Assert.assertTrue(reference.get().getAttachment(Http2Client.RESPONSE_BODY).contains("{\"proxy\": \"hello\"}"));
         System.out.println(reference.get().getAttachment(Http2Client.RESPONSE_BODY));
+    }
+
+    /**
+     * This is to test if retry works when the backend times out. The sidecar should retry the same request
+     * again in the case timeout or 500 errors. It can run hours or days without stopping. Marked as Ignore. 
+     *
+     * @throws Exception
+     */
+    @Ignore
+    @Test
+    public void testTimeout() throws Exception {
+        final Http2Client client = Http2Client.getInstance();
+        while(true) {
+            final CountDownLatch latch = new CountDownLatch(1);
+            final ClientConnection connection;
+            try {
+                connection = client.connect(new URI(url), Http2Client.WORKER, Http2Client.SSL, Http2Client.BUFFER_POOL, enableHttp2 ? OptionMap.create(UndertowOptions.ENABLE_HTTP2, true) : OptionMap.EMPTY).get();
+            } catch (Exception e) {
+                throw new ClientException(e);
+            }
+            final AtomicReference<ClientResponse> reference = new AtomicReference<>();
+            try {
+                ClientRequest request = new ClientRequest().setPath("/get").setMethod(Methods.GET);
+                request.getRequestHeaders().put(new HttpString("host"), "localhost");
+                connection.sendRequest(request, client.createClientCallback(reference, latch));
+                latch.await();
+            } catch (Exception e) {
+                logger.error("Exception: ", e);
+                throw new ClientException(e);
+            } finally {
+                IoUtils.safeClose(connection);
+            }
+            System.out.println(reference.get().getAttachment(Http2Client.RESPONSE_BODY));
+            Assert.assertTrue(reference.get().getAttachment(Http2Client.RESPONSE_BODY).contains("{\"backend\":\"OK\"}"));
+            Thread.sleep(60000);
+        }
     }
 
 }
