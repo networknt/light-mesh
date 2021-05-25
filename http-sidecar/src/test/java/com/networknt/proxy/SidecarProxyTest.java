@@ -194,7 +194,7 @@ public class SidecarProxyTest {
 
     /**
      * This is to test if retry works when the backend times out. The sidecar should retry the same request
-     * again in the case timeout or 500 errors. It can run hours or days without stopping. Marked as Ignore. 
+     * again in the case timeout or 500 errors. It can run hours or days without stopping. Marked as Ignore.
      *
      * @throws Exception
      */

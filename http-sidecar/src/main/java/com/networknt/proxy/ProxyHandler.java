@@ -146,7 +146,7 @@ public final class ProxyHandler implements HttpHandler {
      * @param next the next handler in line
      * @param rewriteHostHeader should the HOST header be rewritten to use the target host of the call.
      * @param reuseXForwarded should any existing X-Forwarded-For header be used or should it be overwritten.
-     * @param maxConnectionRetries
+     * @param maxConnectionRetries max connection retries.
      */
     @Deprecated
     public ProxyHandler(ProxyClient proxyClient, int maxRequestTime, HttpHandler next, boolean rewriteHostHeader, boolean reuseXForwarded, int maxConnectionRetries) {
