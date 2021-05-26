@@ -12,7 +12,7 @@
 set -ex
 
 VERSION=$1
-IMAGE_NAME="networknt/light-proxy"
+IMAGE_NAME="networknt/http-sidecar"
 
 showHelp() {
     echo " "
