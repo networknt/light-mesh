@@ -12,7 +12,7 @@
 set -ex
 
 VERSION=$1
-IMAGE_NAME="networknt/com.networknt.kafka-sidecar-1.0.0"
+IMAGE_NAME="networknt/kafka-sidecar"
 
 showHelp() {
     echo " "
