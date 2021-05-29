@@ -61,53 +61,60 @@ import static java.util.Collections.singletonList;
  * be received, the handle will have a queue to cache the last several messages to remove duplicated
  * message possible.
  *
+ * This handler will only work when the ProducerStartupHook is enabled in the service.yml file. If
+ * the startup hook is not called, an error message will be returned when this endpoint is called.
+ *
  * @author Steve Hu
  */
 public class ProducersTopicPostHandler implements LightHttpHandler {
     private static final Logger logger = LoggerFactory.getLogger(ProducersTopicPostHandler.class);
     private static String STATUS_ACCEPTED = "SUC10202";
     private static String FAILED_TO_GET_SCHEMA = "ERR12208";
+    private static String PRODUCER_NOT_ENABLED = "ERR12216";
 
-    private final SchemaManager schemaManager;
-    private final SchemaRecordSerializer schemaRecordSerializer;
-    private final NoSchemaRecordSerializer noSchemaRecordSerializer;
+    private SchemaManager schemaManager;
+    private SchemaRecordSerializer schemaRecordSerializer;
+    private NoSchemaRecordSerializer noSchemaRecordSerializer;
     private String callerId = "unknown";
     private KafkaProducerConfig config;
     List<AuditRecord> auditRecords = new ArrayList<>();
 
     public ProducersTopicPostHandler() {
-        SidecarProducer lightProducer = (SidecarProducer) SingletonServiceFactory.getBean(NativeLightProducer.class);
-        config = lightProducer.config;
-        Map<String, Object> configs = new HashMap<>();
-        configs.putAll(config.getProperties());
-        String url = (String)config.getProperties().get("schema.registry.url");
-        Object cacheObj =  config.getProperties().get("schema.registry.cache");
-        int cache = 100;
-        if(cacheObj != null && cacheObj instanceof String) {
-            cache = Integer.valueOf((String)cacheObj);
-        }
-        SchemaRegistryClient schemaRegistryClient = new CachedSchemaRegistryClient(
-                new RestService(singletonList(url)),
-                cache,
-                Arrays.asList(new AvroSchemaProvider(), new JsonSchemaProvider(), new ProtobufSchemaProvider()),
-                configs,
-                null
-        );
-        noSchemaRecordSerializer = new NoSchemaRecordSerializer(new HashMap<>());
-        schemaRecordSerializer = new SchemaRecordSerializer(schemaRegistryClient,configs, configs, configs);
-        schemaManager = new SchemaManagerImpl(schemaRegistryClient, new TopicNameStrategy());
-        if(config.isInjectCallerId()) {
-            Map<String, Object> serverConfig = Config.getInstance().getJsonMapConfigNoCache("server");
-            if(serverConfig != null) {
-                callerId = (String)serverConfig.get("serviceId");
+        // constructed this handler only if the startup hook producer is not empty.
+        if(ProducerStartupHook.producer != null) {
+            SidecarProducer lightProducer = (SidecarProducer) SingletonServiceFactory.getBean(NativeLightProducer.class);
+            config = lightProducer.config;
+            Map<String, Object> configs = new HashMap<>();
+            configs.putAll(config.getProperties());
+            String url = (String) config.getProperties().get("schema.registry.url");
+            Object cacheObj = config.getProperties().get("schema.registry.cache");
+            int cache = 100;
+            if (cacheObj != null && cacheObj instanceof String) {
+                cache = Integer.valueOf((String) cacheObj);
             }
+            SchemaRegistryClient schemaRegistryClient = new CachedSchemaRegistryClient(
+                    new RestService(singletonList(url)),
+                    cache,
+                    Arrays.asList(new AvroSchemaProvider(), new JsonSchemaProvider(), new ProtobufSchemaProvider()),
+                    configs,
+                    null
+            );
+            noSchemaRecordSerializer = new NoSchemaRecordSerializer(new HashMap<>());
+            schemaRecordSerializer = new SchemaRecordSerializer(schemaRegistryClient, configs, configs, configs);
+            schemaManager = new SchemaManagerImpl(schemaRegistryClient, new TopicNameStrategy());
+            if (config.isInjectCallerId()) {
+                Map<String, Object> serverConfig = Config.getInstance().getJsonMapConfigNoCache("server");
+                if (serverConfig != null) {
+                    callerId = (String) serverConfig.get("serviceId");
+                }
+            }
+            // register the module with the configuration properties.
+            List<String> masks = new ArrayList<>();
+            masks.add("basic.auth.user.info");
+            masks.add("sasl.jaas.config");
+            masks.add("schemaRegistryTruststorePass");
+            ModuleRegistry.registerModule(ProducersTopicPostHandler.class.getName(), Config.getInstance().getJsonMapConfigNoCache(KafkaProducerConfig.CONFIG_NAME), masks);
         }
-        // register the module with the configuration properties.
-        List<String> masks = new ArrayList<>();
-        masks.add("basic.auth.user.info");
-        masks.add("sasl.jaas.config");
-        masks.add("schemaRegistryTruststorePass");
-        ModuleRegistry.registerModule(ProducersTopicPostHandler.class.getName(), Config.getInstance().getJsonMapConfigNoCache(KafkaProducerConfig.CONFIG_NAME), masks);
     }
 
     /*
@@ -138,28 +145,33 @@ public class ProducersTopicPostHandler implements LightHttpHandler {
 
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-        // the topic is the path parameter, so it is required and cannot be null.
-        String topic = exchange.getQueryParameters().get("topic").getFirst();
-        if(logger.isDebugEnabled()) logger.debug("ProducerTopicPostHandler handleRequest start with topic " + topic);
-        exchange.dispatch();
-        Map<String, Object> map = (Map)exchange.getAttachment(BodyHandler.REQUEST_BODY);
-        ProduceRequest produceRequest = Config.getInstance().getMapper().convertValue(map, ProduceRequest.class);
-        Headers headers = populateHeaders(exchange, config, topic);
-        CompletableFuture<ProduceResponse> responseFuture = produceWithSchema(topic, Optional.empty(), produceRequest, headers);
-        responseFuture.whenCompleteAsync((response, throwable) -> {
-            // write the audit log here.
-            synchronized (auditRecords) {
-                if (auditRecords != null && auditRecords.size() > 0) {
-                    auditRecords.forEach(ar -> {
-                        writeAuditLog(ar);
-                    });
-                    // clean up the audit entries
-                    auditRecords.clear();
+        if(ProducerStartupHook.producer != null) {
+            // the topic is the path parameter, so it is required and cannot be null.
+            String topic = exchange.getQueryParameters().get("topic").getFirst();
+            if (logger.isDebugEnabled())
+                logger.debug("ProducerTopicPostHandler handleRequest start with topic " + topic);
+            exchange.dispatch();
+            Map<String, Object> map = (Map) exchange.getAttachment(BodyHandler.REQUEST_BODY);
+            ProduceRequest produceRequest = Config.getInstance().getMapper().convertValue(map, ProduceRequest.class);
+            Headers headers = populateHeaders(exchange, config, topic);
+            CompletableFuture<ProduceResponse> responseFuture = produceWithSchema(topic, Optional.empty(), produceRequest, headers);
+            responseFuture.whenCompleteAsync((response, throwable) -> {
+                // write the audit log here.
+                synchronized (auditRecords) {
+                    if (auditRecords != null && auditRecords.size() > 0) {
+                        auditRecords.forEach(ar -> {
+                            writeAuditLog(ar);
+                        });
+                        // clean up the audit entries
+                        auditRecords.clear();
+                    }
                 }
-            }
-            exchange.getResponseHeaders().put(io.undertow.util.Headers.CONTENT_TYPE, "application/json");
-            exchange.getResponseSender().send(JsonMapper.toJson(response));
-        });
+                exchange.getResponseHeaders().put(io.undertow.util.Headers.CONTENT_TYPE, "application/json");
+                exchange.getResponseSender().send(JsonMapper.toJson(response));
+            });
+        } else {
+            setExchangeStatus(exchange, PRODUCER_NOT_ENABLED);
+        }
     }
 
     /*
