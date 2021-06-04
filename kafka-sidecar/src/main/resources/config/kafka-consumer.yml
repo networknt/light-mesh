@@ -24,10 +24,13 @@ properties:
   # basic.auth.user.info: ${kafka-consumer.username:username}:${kafka-consumer.password:password}
   # basic.auth.credentials.source: ${kafka-consumer.basic.auth.credentials.source:USER_INFO}
   # max fetch size from Kafka cluster. Default 50mb is too big for cache consumption on the sidecar
-  fetch.max.bytes: ${kafka-consumer.fetch.max.bytes:65536}
+  fetch.max.bytes: ${kafka-consumer.fetch.max.bytes:1048576}
   # max pol records default is 500. Adjust it based on the size of the records to make sure each poll
   # is similar to requestMaxBytes down below.
   max.poll.records: ${kafka-consumer.max.poll.records:100}
+  # The maximum amount of data per-partition the server will return. Records are fetched in batches by the consumer.
+  # If the first record batch in the first non-empty partition of the fetch is larger than this limit, the batch will still be returned to ensure that the consumer can make progress.
+  max.partition.fetch.bytes: ${kafka-consumer.max.partition.fetch.bytes:1048576}
 
 # common configuration properties between active and reactive consumers
 # Indicator if the dead letter topic is enabled.
