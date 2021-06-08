@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>com.networknt</groupId>
+    <artifactId>http-mesh</artifactId>
+    <packaging>pom</packaging>
+    <version>2.0.28-SNAPSHOT</version>
+    <description>Http Mesh</description>
+    <url>https://github.com/networknt/light-mesh</url>
+
+    <developers>
+        <developer>
+            <id>stevehu</id>
+            <name>Steve Hu</name>
+            <email>stevehu@gmail.com</email>
+        </developer>
+    </developers>
+
+    <issueManagement>
+        <system>github</system>
+        <url>https://github.com/networknt/light-mesh/issues</url>
+    </issueManagement>
+
+    <licenses>
+        <license>
+            <name>Apache License Version 2.0</name>
+            <url>http://repository.jboss.org/licenses/apache-2.0.txt</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
+    <modules>
+        <module>http-sidecar</module>
+        <module>kafka-sidecar</module>
+    </modules>
+
+
+    <scm>
+        <connection>scm:git://github.com:networknt/light-mesh.git</connection>
+        <developerConnection>scm:git://github.com:networknt/light-mesh.git</developerConnection>
+        <url>https://github.com:networknt/light-mesh.git</url>
+    </scm>
+
+    <distributionManagement>
+        <snapshotRepository>
+            <id>ossrh</id>
+            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+        </snapshotRepository>
+        <repository>
+            <id>ossrh</id>
+            <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+        </repository>
+    </distributionManagement>
+
+    <repositories>
+        <repository>
+            <id>ksqlDB</id>
+            <name>ksqlDB</name>
+            <url>https://ksqldb-maven.s3.amazonaws.com/maven/</url>
+        </repository>
+        <repository>
+            <id>confluent</id>
+            <url>https://packages.confluent.io/maven/</url>
+        </repository>
+        <repository>
+            <id>jenkins</id>
+            <url>https://jenkins-confluent-packages-beta-maven.s3.amazonaws.com/6.1.0-beta201006024150/1/maven/</url>
+        </repository>
+        <repository>
+            <id>jitpack.io</id>
+            <url>https://jitpack.io</url>
+        </repository>
+
+        <repository>
+            <id>central</id>
+            <url>
+                https://oss.sonatype.org/content/repositories/releases
+            </url>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>
+        <repository>
+            <id>snapshots</id>
+            <url>
+                https://oss.sonatype.org/content/repositories/snapshots
+            </url>
+            <snapshots>
+                <enabled>true</enabled>
+                <!-- never, daily, interval:X (where X is in minutes) or always -->
+                <!--<updatePolicy>daily</updatePolicy> -->
+            </snapshots>
+            <releases>
+                <enabled>false</enabled>
+            </releases>
+        </repository>
+    </repositories>
+
+
+</project>
