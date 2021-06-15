@@ -19,10 +19,6 @@
         <version.jackson>2.12.1</version.jackson>
         <version.slf4j>1.7.25</version.slf4j>
         <version.jose4j>0.6.3</version.jose4j>
-        <version.lambda-core>1.2.1</version.lambda-core>
-        <version.lambda-events>3.6.0</version.lambda-events>
-        <version.lambda-awssdk>2.15.53</version.lambda-awssdk>
-        <version.lambda-iam>1.11.918</version.lambda-iam>
         <version.logback>1.2.3</version.logback>
         <version.junit>4.13.1</version.junit>
         <version.undertow>2.2.4.Final</version.undertow>
@@ -191,26 +187,6 @@
             <groupId>io.undertow</groupId>
             <artifactId>undertow-core</artifactId>
             <version>${version.undertow}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.amazonaws</groupId>
-            <artifactId>aws-lambda-java-core</artifactId>
-            <version>${version.lambda-core}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.amazonaws</groupId>
-            <artifactId>aws-lambda-java-events</artifactId>
-            <version>${version.lambda-events}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.amazonaws</groupId>
-            <artifactId>aws-java-sdk-iam</artifactId>
-            <version>${version.lambda-iam}</version>
-        </dependency>
-        <dependency>
-            <groupId>software.amazon.awssdk</groupId>
-            <artifactId>lambda</artifactId>
-            <version>${version.lambda-awssdk}</version>
         </dependency>
 
         <!-- Test Dependencies -->
