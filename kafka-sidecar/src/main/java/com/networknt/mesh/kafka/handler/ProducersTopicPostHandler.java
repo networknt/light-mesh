@@ -13,6 +13,7 @@ import com.networknt.kafka.common.KafkaProducerConfig;
 import com.networknt.kafka.entity.*;
 import com.networknt.kafka.producer.*;
 import com.networknt.mesh.kafka.ProducerStartupHook;
+import com.networknt.mesh.kafka.SidecarAuditHelper;
 import com.networknt.server.Server;
 import com.networknt.service.SingletonServiceFactory;
 import com.networknt.status.Status;
@@ -473,17 +474,21 @@ public class ProducersTopicPostHandler implements LightHttpHandler {
     }
 
     private void writeAuditLog(AuditRecord auditRecord) {
-        try {
-            ProducerStartupHook.producer.send(
-                    new ProducerRecord<>(
-                            config.getAuditTopic(),
-                            null,
-                            System.currentTimeMillis(),
-                            auditRecord.getCorrelationId().getBytes(StandardCharsets.UTF_8),
-                            JsonMapper.toJson(auditRecord).getBytes(StandardCharsets.UTF_8),
-                            null));
-        } catch (Exception ex) {
-            ex.printStackTrace();
+        if(KafkaProducerConfig.AUDIT_TARGET_TOPIC.equals(config.getAuditTarget())) {
+            try {
+                ProducerStartupHook.producer.send(
+                        new ProducerRecord<>(
+                                config.getAuditTopic(),
+                                null,
+                                System.currentTimeMillis(),
+                                auditRecord.getCorrelationId().getBytes(StandardCharsets.UTF_8),
+                                JsonMapper.toJson(auditRecord).getBytes(StandardCharsets.UTF_8),
+                                null));
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            }
+        } else {
+            SidecarAuditHelper.logResult(auditRecord);
         }
     }
 }
