@@ -40,6 +40,24 @@
         </layout>
     </appender>
 
+    <!--sidecar audit log-->
+    <appender name="sidecar" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>log/sidecar-audit.json</file> <!-- logfile location -->
+        <encoder>
+            <pattern>%date{ISO8601} %msg%n</pattern> <!-- the layout pattern used to format log entries -->
+            <immediateFlush>true</immediateFlush>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
+            <fileNamePattern>log/sidecar-audit.json.%i.zip</fileNamePattern>
+            <minIndex>1</minIndex>
+            <maxIndex>5</maxIndex> <!-- max number of archived logs that are kept -->
+        </rollingPolicy>
+        <triggeringPolicy class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
+            <maxFileSize>200MB
+            </maxFileSize> <!-- The size of the logfile that triggers a switch to a new logfile, and the current one archived -->
+        </triggeringPolicy>
+    </appender>
+
     <!--audit log-->
     <appender name="audit" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>log/audit.log</file> <!-- logfile location -->
@@ -82,7 +100,11 @@
         <appender-ref ref="stdout"/>
     </root>
 
-    <logger name="com.networknt" level="trace" additivity="false">
+    <logger name="Sidecar" level="info" additivity="false">
+        <appender-ref ref="sidecar"/>
+    </logger>
+
+    <logger name="com.networknt" level="info" additivity="false">
         <appender-ref ref="stdout"/>
     </logger>
 

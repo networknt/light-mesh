@@ -5,6 +5,7 @@ import com.networknt.config.Config;
 import com.networknt.config.JsonMapper;
 import com.networknt.exception.FrameworkException;
 import com.networknt.kafka.common.KafkaConsumerConfig;
+import com.networknt.kafka.common.KafkaProducerConfig;
 import com.networknt.kafka.consumer.*;
 import com.networknt.kafka.entity.*;
 import com.networknt.server.Server;
@@ -245,22 +246,25 @@ public class ReactiveConsumerStartupHook implements StartupHookProvider {
         auditRecord.setCorrelationId((String)result.getRecord().getHeaders().get("X-Correlation-Id"));
         auditRecord.setTraceabilityId((String)result.getRecord().getHeaders().get("X-Traceability-Id"));
         auditRecord.setAuditStatus(result.isProcessed() ? AuditRecord.AuditStatus.SUCCESS : AuditRecord.AuditStatus.FAILURE);
-        ProducerStartupHook.producer.send(
-                new ProducerRecord<>(
-                        config.getAuditTopic(),
-                        null,
-                        System.currentTimeMillis(),
-                        auditRecord.getCorrelationId().getBytes(StandardCharsets.UTF_8),
-                        JsonMapper.toJson(auditRecord).getBytes(StandardCharsets.UTF_8),
-                        null),
-                (metadata, exception) -> {
-                    if (exception != null) {
-                        // handle the exception by logging an error;
-                        logger.error("Exception:" + exception);
-                    } else {
-                        if(logger.isTraceEnabled()) logger.trace("Write to audit topic meta " + metadata.topic() + " " + metadata.partition() + " " + metadata.offset());
-                    }
-                });
-
+        if(KafkaProducerConfig.AUDIT_TARGET_TOPIC.equals(config.getAuditTarget())) {
+            ProducerStartupHook.producer.send(
+                    new ProducerRecord<>(
+                            config.getAuditTopic(),
+                            null,
+                            System.currentTimeMillis(),
+                            auditRecord.getCorrelationId().getBytes(StandardCharsets.UTF_8),
+                            JsonMapper.toJson(auditRecord).getBytes(StandardCharsets.UTF_8),
+                            null),
+                    (metadata, exception) -> {
+                        if (exception != null) {
+                            // handle the exception by logging an error;
+                            logger.error("Exception:" + exception);
+                        } else {
+                            if(logger.isTraceEnabled()) logger.trace("Write to audit topic meta " + metadata.topic() + " " + metadata.partition() + " " + metadata.offset());
+                        }
+                    });
+        } else {
+            SidecarAuditHelper.logResult(auditRecord);
+        }
     }
 }
