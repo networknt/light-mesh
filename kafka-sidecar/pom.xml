@@ -18,6 +18,7 @@
         <version.light-4j>2.0.28-SNAPSHOT</version.light-4j>
         <version.jackson>2.12.1</version.jackson>
         <version.slf4j>1.7.25</version.slf4j>
+        <version.logstash>6.4</version.logstash>
         <version.jose4j>0.6.3</version.jose4j>
         <version.lambda-core>1.2.1</version.lambda-core>
         <version.lambda-events>3.6.0</version.lambda-events>
@@ -169,9 +170,19 @@
             <version>${version.jackson}</version>
         </dependency>
         <dependency>
+            <groupId>com.fasterxml.jackson.module</groupId>
+            <artifactId>jackson-module-scala_2.13</artifactId>
+            <version>${version.jackson}</version>
+        </dependency>
+        <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
             <version>${version.logback}</version>
+        </dependency>
+        <dependency>
+            <groupId>net.logstash.logback</groupId>
+            <artifactId>logstash-logback-encoder</artifactId>
+            <version>${version.logstash}</version>
         </dependency>
         <dependency>
             <groupId>io.confluent.ksql</groupId>
