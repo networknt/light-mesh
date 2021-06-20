@@ -8,10 +8,10 @@ ip: 0.0.0.0
 httpPort:  8080
 
 # Enable HTTP should be false on official environment.
-enableHttp: false
+enableHttp: true
 
 # Https port if enableHttps is true.
-httpsPort:  8080
+httpsPort:  8443
 
 # Enable HTTPS should be true on official environment.
 enableHttps: true
@@ -38,8 +38,14 @@ truststoreName: server.truststore
 # Truststore password
 truststorePass: password
 
+# Bootstrap truststore name used to connect to the light-config-server if it is used.
+bootstrapStoreName: bootstrap.truststore
+
+# Bootstrap truststore password
+bootstrapStorePass: password
+
 # Unique service identifier. Used in service registration and discovery etc.
-serviceId: com.networknt.backend-1.0.0
+serviceId: com.networknt.test-1.0.0
 
 # Flag to enable service registration. Only be true if running as standalone Java jar.
 enableRegistry: false
@@ -47,4 +53,4 @@ enableRegistry: false
 # environment tag that will be registered on consul to support multiple instances per env for testing.
 # https://github.com/networknt/light-doc/blob/master/docs/content/design/env-segregation.md
 # This tag should only be set for testing env, not production. The production certification process will enforce it.
-# environment: test1
+environment: dev
