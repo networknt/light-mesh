@@ -47,7 +47,7 @@ public class LightProxyHandler implements HttpHandler {
     ProxyHandler proxyHandler;
 
     public LightProxyHandler() {
-        List<String> hosts = Arrays.asList(config.getHosts().split(","));
+        List<String> hosts = config.getHosts();
         if(config.httpsEnabled) {
             LoadBalancingProxyClient loadBalancer = new LoadBalancingProxyClient()
                     .setConnectionsPerThread(config.getConnectionsPerThread());

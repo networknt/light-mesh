@@ -155,8 +155,8 @@ public class SidecarProxyTest {
             IoUtils.safeClose(connection);
         }
         for (final AtomicReference<ClientResponse> reference : references) {
-            Assert.assertTrue(reference.get().getAttachment(Http2Client.RESPONSE_BODY).contains("{\"backend\":\"OK\"}"));
             System.out.println(reference.get().getAttachment(Http2Client.RESPONSE_BODY));
+            Assert.assertTrue(reference.get().getAttachment(Http2Client.RESPONSE_BODY).contains("{\"backend\":\"OK\"}"));
         }
     }
 

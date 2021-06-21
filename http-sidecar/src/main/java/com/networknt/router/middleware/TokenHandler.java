@@ -21,6 +21,7 @@ import com.networknt.client.oauth.OauthHelper;
 import com.networknt.config.Config;
 import com.networknt.handler.Handler;
 import com.networknt.handler.MiddlewareHandler;
+import com.networknt.httpstring.HttpStringConstants;
 import com.networknt.monad.Result;
 import com.networknt.utility.ModuleRegistry;
 import io.undertow.Handlers;
@@ -64,6 +65,7 @@ import java.util.Map;
 public class TokenHandler implements MiddlewareHandler {
     public static final String CONFIG_NAME = "token";
     public static final String ENABLED = "enabled";
+    public static final String FOR_SCOPE = "scopeToken";
 
     public static Map<String, Object> config = Config.getInstance().getJsonMapConfigNoCache(CONFIG_NAME);
     static Logger logger = LoggerFactory.getLogger(TokenHandler.class);
@@ -85,7 +87,13 @@ public class TokenHandler implements MiddlewareHandler {
             OauthHelper.sendStatusToResponse(exchange, result.getError());
             return;
         }
-        exchange.getRequestHeaders().put(Headers.AUTHORIZATION, "Bearer " + cachedJwt.getJwt());
+        String authToken = exchange.getRequestHeaders().getFirst(Headers.AUTHORIZATION);
+        Object scope = config.get(FOR_SCOPE);
+        if (authToken!=null && scope != null && (Boolean) scope) {
+            exchange.getRequestHeaders().put(HttpStringConstants.SCOPE_TOKEN, "Bearer " + cachedJwt.getJwt());
+        } else {
+            exchange.getRequestHeaders().put(Headers.AUTHORIZATION, "Bearer " + cachedJwt.getJwt());
+        }
         Handler.next(exchange, next);
     }
 

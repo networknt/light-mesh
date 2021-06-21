@@ -16,6 +16,8 @@
 
 package com.networknt.proxy;
 
+import java.util.List;
+
 /**
  * Config class for reverse proxy.
  *
@@ -25,7 +27,7 @@ public class ProxyConfig {
     boolean enabled;
     boolean http2Enabled;
     boolean httpsEnabled;
-    String hosts;
+    List<String> hosts;
     int connectionsPerThread;
     int maxRequestTime;
     boolean rewriteHostHeader;
@@ -59,11 +61,11 @@ public class ProxyConfig {
         this.httpsEnabled = httpsEnabled;
     }
 
-    public String getHosts() {
+    public List<String> getHosts() {
         return hosts;
     }
 
-    public void setHosts(String hosts) {
+    public void setHosts(List<String> hosts) {
         this.hosts = hosts;
     }
 

@@ -5,6 +5,7 @@ import com.networknt.config.Config;
 import com.networknt.config.JsonMapper;
 import com.networknt.exception.FrameworkException;
 import com.networknt.kafka.common.KafkaConsumerConfig;
+import com.networknt.kafka.common.KafkaProducerConfig;
 import com.networknt.kafka.consumer.*;
 import com.networknt.kafka.entity.*;
 import com.networknt.server.Server;

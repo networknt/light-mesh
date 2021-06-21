@@ -3,7 +3,7 @@ A service mesh implementation based on the light-proxy and light-router with SMI
 
 Light-mesh is a simple, light-weight, yet full-featured service mesh. It is designed as cloud/container-native running in your Kubernetes cluster, but not limited to the Kubernetes only. For large organizations, legacy APIs, services scattered across multiple cloud providers, B2B, Mobile, and Single Page applications all coexist, and we cannot expect customers to put everything into the same Kubernetes cluster. It supports the latest Service Mesh Interface specification [SMI](https://smi-spec.io) and can be managed from Solo.io [Service Mesh Hub](https://www.solo.io/servicemeshhub). 
 
-![Ligh-Mesh Architecture](light-mesh.png)
+![Ligh-Mesh Architecture](docs/light-mesh.png)
 
 ### Flexible Service Mesh
 

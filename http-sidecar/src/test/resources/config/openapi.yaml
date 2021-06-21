@@ -15,14 +15,21 @@ paths:
     /get:
         get:
             description: Return a JSON object
-            operationId: getData
+            operationId: getDataByGet
             responses:
                 default:
                     description: Default response
     /post:
         post:
             description: Return a JSON object
-            operationId: getData
+            operationId: getDataByPost
+            responses:
+                default:
+                    description: Default response
+    /v2/address:
+        get:
+            description: Return a JSON object
+            operationId: getAddress
             responses:
                 default:
                     description: Default response
