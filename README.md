@@ -1,13 +1,38 @@
 # light-mesh:  Light Service 
 
-
 Light-mesh is a key component/service leveraging Microservice Sidecar Pattern in light-4j microservice platform. 
 
 It is designed as cloud/container-native running in your Kubernetes cluster, but not limited to the Kubernetes only. For large organizations, legacy APIs, services scattered across multiple cloud providers, B2B, Mobile, and Single Page applications all coexist, and we cannot expect customers to put everything into the same Kubernetes cluster. It supports the latest Service Mesh Interface specification [SMI](https://smi-spec.io) and can be managed from Solo.io [Service Mesh Hub](https://www.solo.io/servicemeshhub). 
 
+
+### light-mesh modules:
+
+  - http-sidecar
+  
+    http-sidecar can be deployed as sidecar container/service to handle restful request/response related functionalities which include:
+     
+     - Package and deployed as separate module to handle Cross-Cutting Concerns for main container/service in the same pod. In this case, the main service only need care about the http request/response and business logic
+     
+     - Ingress traffic: client API request will come to sidecar service first, sidecar service act as a proxy to delegate light client features, which include, openapi schema validation, observability, monitoring, logging, JWT verify, etc. Then forward the request to main service.
+      
+     - Egress traffic: main service call sidecar service first for egress traffic; in this case, sidecar service act as a router to delegate light client features, which include service discovery, SSL handshake, JWT token management, etc. Then forward the request to server API.
+  
+  - kafka-sidecar
+  
+    //TODO
+
+
+
+
 ### Architecture diagram
 
+- Deploy the service with sidecar container:
+
 ![Ligh-Mesh Architecture](docs/mesh.png)
+
+- Service normal deployment without sidecar container:
+
+![Ligh-Mesh Architecture](docs/mesh-2.png)
 
 
 ### What Is a Sidecar Pattern
@@ -27,36 +52,15 @@ In Kubernetes cluster environment, sidecar can be deployed as Sidecar container 
 
 
 
-### Flexible Service Mesh
+### http-sidecar
 
-- Light-mesh can be deployed as sidecar container run in parallel with the main container in the pod. 
+- http-sidecar can be deployed as sidecar container run in parallel with the main container in the pod. 
 
-The Light-mesh sidecar will proxy and router the ingress/egress traffic for the service in main container, and can delegate the Cross-Cutting Concerns handlers for the service in main container. 
+The http-sidecar sidecar service will handle proxy and router the ingress/egress traffic for the service in main container, and can delegate the Cross-Cutting Concerns handlers for the service in main container. 
  
-- Light-mesh be deployed as separate service to a singer container pod. It handles routing proxy endpoints running on each node. 
 
-The mesh controller runs in a dedicated server and handles all the configuration to the proxy nodes. The light-mesh supports two types of configuration options: light-config-server and SMI objects. Since we are not using sidecars, it does not modify your Kubernetes objects and does not alter your traffic without your knowledge. It works in a non-invasive fashion compare with other Service Mesh implementations. 
+### kafka-sidecar
 
-Most service mesh implementations are working only in a Kubernetes cluster. Light-mesh can be deployed inside a Kubernetes cluster, or across multiple Kubernetes clusters, or just on plain virtual servers, or across multiple cloud providers, or combination of all above. It is a total solution for large organizations that have too many legacy applications to be integrated. After all, you cannot expect a big organization will deploy all its applications into the same Kubernetes cluster. 
-
-To support the flexibility, we have our controller and registry deployed outside of the Kubernetes cluster. All services, regardless of deploying in a Kubernetes cluster, VM, Unit Server, or Mainframe, can register as a global service with a unique service identifier. 
-
-
-### light-mesh modules:
-
-  - http-sidecar
-  
-    http-sidecar can be deployed as sidecar container/service to handle restful request/response related functionalities which include:
-     
-     - Package and deployed as separate module to handle Cross-Cutting Concerns for main container/service in the same pod. In this case, the main service only need care about the http request/response and business logic
-     
-     - Ingress traffic: client API request will come to sidecar service first, sidecar service act as a proxy to delegate light client features, which include, openapi schema validation, observability, monitoring, logging, JWT verify, etc. Then forward the request to main service.
-      
-     - Egress traffic: main service call sidecar service first for egress traffic; in this case, sidecar service act as a router to delegate light client features, which include service discovery, SSL handshake, JWT token management, etc. Then forward the request to server API.
-  
-  - kafka-sidecar
-  
-    //TODO
 
 
 ### light-mesh related light services
