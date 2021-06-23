@@ -159,7 +159,7 @@ public class SidecarProxyTest {
             Assert.assertTrue(reference.get().getAttachment(Http2Client.RESPONSE_BODY).contains("{\"backend\":\"OK\"}"));
         }
     }
-
+    @Ignore
     @Test
     public void testPost() throws Exception {
         final Http2Client client = Http2Client.getInstance();

@@ -66,8 +66,8 @@ chains:
     - correlation
     # - cors
     - header
-    # - path
-    # - router
+    - path
+    - router
     - specification
     - security
     - body
