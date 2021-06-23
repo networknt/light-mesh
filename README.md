@@ -52,14 +52,16 @@ In Kubernetes cluster environment, sidecar can be deployed as Sidecar container 
 
 
 
-### http-sidecar
+### http-sidecar:
 
 - http-sidecar can be deployed as sidecar container run in parallel with the main container in the pod. 
 
 The http-sidecar sidecar service will handle proxy and router the ingress/egress traffic for the service in main container, and can delegate the Cross-Cutting Concerns handlers for the service in main container. 
  
 
-### kafka-sidecar
+### kafka-sidecar:
+
+//TODO
 
 
 
