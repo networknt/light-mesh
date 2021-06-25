@@ -149,8 +149,10 @@ public class ProducersTopicPostHandler implements LightHttpHandler {
         if(ProducerStartupHook.producer != null) {
             // the topic is the path parameter, so it is required and cannot be null.
             String topic = exchange.getQueryParameters().get("topic").getFirst();
-            if (logger.isDebugEnabled())
-                logger.debug("ProducerTopicPostHandler handleRequest start with topic " + topic);
+            long start = System.currentTimeMillis();
+            if (logger.isInfoEnabled()) {
+                logger.info("ProducerTopicPostHandler handleRequest start with topic " + topic);
+            }
             exchange.dispatch();
             Map<String, Object> map = (Map) exchange.getAttachment(BodyHandler.REQUEST_BODY);
             ProduceRequest produceRequest = Config.getInstance().getMapper().convertValue(map, ProduceRequest.class);
@@ -166,6 +168,9 @@ public class ProducersTopicPostHandler implements LightHttpHandler {
                         // clean up the audit entries
                         auditRecords.clear();
                     }
+                }
+                if(logger.isInfoEnabled()) {
+                    logger.info("ProducerTopicPostHandler handleRequest produce to Kafka in " + (System.currentTimeMillis() - start));
                 }
                 exchange.getResponseHeaders().put(io.undertow.util.Headers.CONTENT_TYPE, "application/json");
                 exchange.getResponseSender().send(JsonMapper.toJson(response));

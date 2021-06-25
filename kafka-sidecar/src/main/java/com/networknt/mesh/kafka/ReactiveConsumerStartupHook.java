@@ -245,7 +245,7 @@ public class ReactiveConsumerStartupHook implements StartupHookProvider {
         auditRecord.setCorrelationId((String)result.getRecord().getHeaders().get("X-Correlation-Id"));
         auditRecord.setTraceabilityId((String)result.getRecord().getHeaders().get("X-Traceability-Id"));
         auditRecord.setAuditStatus(result.isProcessed() ? AuditRecord.AuditStatus.SUCCESS : AuditRecord.AuditStatus.FAILURE);
-        if(KafkaProducerConfig.AUDIT_TARGET_TOPIC.equals(config.getAuditTarget())) {
+        if(KafkaConsumerConfig.AUDIT_TARGET_TOPIC.equals(config.getAuditTarget())) {
             ProducerStartupHook.producer.send(
                     new ProducerRecord<>(
                             config.getAuditTopic(),
