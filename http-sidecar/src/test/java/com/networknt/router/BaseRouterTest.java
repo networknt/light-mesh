@@ -41,6 +41,7 @@ import java.util.Map;
 import static com.networknt.server.Server.TRUST_ALL_CERTS;
 import static io.undertow.Handlers.path;
 
+@Ignore
 public class BaseRouterTest {
     public  static final Logger logger = LoggerFactory.getLogger(BaseRouterTest.class);
     public static final String CONFIG_NAME = "server";

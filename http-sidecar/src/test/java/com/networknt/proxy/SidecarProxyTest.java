@@ -45,6 +45,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
 
+@Ignore
 public class SidecarProxyTest {
     static final Logger logger = LoggerFactory.getLogger(SidecarProxyTest.class);
 
