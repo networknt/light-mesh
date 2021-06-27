@@ -24,6 +24,7 @@ import io.undertow.client.ClientConnection;
 import io.undertow.client.ClientRequest;
 import io.undertow.client.ClientResponse;
 import io.undertow.util.Headers;
+import io.undertow.util.HttpString;
 import io.undertow.util.Methods;
 import org.junit.*;
 import org.xnio.IoUtils;
@@ -41,7 +42,6 @@ public class RouterHttpTest extends BaseRouterTest{
      * Calling server1 directly to ensure that the endpoint is working.
      * @throws Exception
      */
-
     @Test
     public void testServer1() throws Exception {
         final Http2Client client = Http2Client.getInstance();
@@ -72,7 +72,6 @@ public class RouterHttpTest extends BaseRouterTest{
         }
     }
 
-    @Ignore
     @Test
     public void testGet() throws Exception {
         final Http2Client client = Http2Client.getInstance();
@@ -114,5 +113,7 @@ public class RouterHttpTest extends BaseRouterTest{
             Assert.assertTrue(body.contains("Server"));
         }
     }
+
+
 
 }

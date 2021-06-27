@@ -1,0 +1,4 @@
+
+# Singleton service factory configuration/IoC injection
+
+singletons: ${service.singletons:}
