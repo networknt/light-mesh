@@ -8,14 +8,13 @@ http2Enabled: false
 httpsEnabled: false
 
 # Target URIs
-hosts:
-  - http://localhost:8081
+hosts:  http://localhost:8081
 
 # Connections per thread to the target servers
 connectionsPerThread: 20
 
 # Max request time in milliseconds before timeout
-maxRequestTime: 100000
+maxRequestTime: 1000
 
 # Rewrite Host Header with the target host and port and write X_FORWARDED_HOST with original host
 rewriteHostHeader: true
