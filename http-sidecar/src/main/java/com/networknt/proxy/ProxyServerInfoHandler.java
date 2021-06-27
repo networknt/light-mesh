@@ -44,7 +44,7 @@ public class ProxyServerInfoHandler implements LightHttpHandler {
         result.put(PROXY_INFO_KEY, proxyInfo);
         HeaderValues authVal = exchange.getRequestHeaders().get(Headers.AUTHORIZATION_STRING);
         String token = authVal == null ? "" : authVal.get(0);
-        List<String> urls = Arrays.asList(config.getHosts().split(","));
+        List<String> urls = config.getHosts();
         for (String url : urls) {
             Map<String, Object> serverInfo;
             try {

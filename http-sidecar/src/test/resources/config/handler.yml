@@ -34,7 +34,7 @@ handlers:
   # - com.networknt.metrics.MetricsHandler@metrics
   - com.networknt.traceability.TraceabilityHandler@traceability
   - com.networknt.correlation.CorrelationHandler@correlation
-  #Cors handler to handler post/put pre-flight
+  # Cors handler to handler post/put pre-flight. It is not used in the sidecar but only in the router.
   # - com.networknt.cors.CorsHttpHandler@cors
   - com.networknt.openapi.OpenApiHandler@specification
   - com.networknt.openapi.JwtVerifyHandler@security
@@ -45,7 +45,9 @@ handlers:
   # Header middleware to manipulate request and/or response headers before or after downstream server
   - com.networknt.header.HeaderHandler@header
   # Direct requests to named services based on the request path
-  # - com.networknt.router.middleware.PathPrefixServiceHandler@path
+  - com.networknt.router.middleware.SAMLTokenHandler@saml
+  - com.networknt.router.middleware.ServiceDictHandler@path
+  - com.networknt.router.RouterHandler@router
   - com.networknt.proxy.LightProxyHandler@proxy
   - com.networknt.proxy.ProxyServerInfoHandler@proxyServerInfo
   # - com.networknt.resource.VirtualHostHandler@virtual
@@ -64,7 +66,8 @@ chains:
     - correlation
     # - cors
     - header
-    # - path
+    - path
+    - router
     - specification
     - security
     - body
@@ -72,16 +75,42 @@ chains:
     #- sanitizer
     - validator
     - proxy
+  router:
+    - exception
+    # - metrics
+    - traceability
+    - correlation
+    # - cors
+    - header
+    # - saml
+    - path
+    - router
 
 paths:
-  - path: '/get'
+  - path: '/*'
     method: 'get'
     exec:
       - default
-  - path: '/post'
+  - path: '/*'
     method: 'post'
     exec:
       - default
+  - path: '/*'
+    method: 'delete'
+    exec:
+      - default
+  - path: '/*'
+    method: 'put'
+    exec:
+      - default
+  - path: '/*'
+    method: 'patch'
+    exec:
+      - default
+  - path: '/v2/address'
+    method: 'get'
+    exec:
+      - router
 
   - path: '/health/com.networknt.backend-1.0.0'
     method: 'get'

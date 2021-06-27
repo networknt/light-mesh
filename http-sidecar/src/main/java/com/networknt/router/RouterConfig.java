@@ -14,35 +14,23 @@
  * limitations under the License.
  */
 
-package com.networknt.proxy;
-
-import java.util.List;
+package com.networknt.router;
 
 /**
- * Config class for reverse proxy.
+ * Config class for reverse router.
  *
  * @author Steve Hu
  */
-public class ProxyConfig {
-    boolean enabled;
+public class RouterConfig {
     boolean http2Enabled;
     boolean httpsEnabled;
-    List<String> hosts;
-    int connectionsPerThread;
     int maxRequestTime;
     boolean rewriteHostHeader;
     boolean reuseXForwarded;
     int maxConnectionRetries;
+    String[] hostWhitelist;
 
-    public ProxyConfig() {
-    }
-
-    public boolean isEnabled() {
-        return enabled;
-    }
-
-    public void setEnabled(boolean enabled) {
-        this.enabled = enabled;
+    public RouterConfig() {
     }
 
     public boolean isHttp2Enabled() {
@@ -59,22 +47,6 @@ public class ProxyConfig {
 
     public void setHttpsEnabled(boolean httpsEnabled) {
         this.httpsEnabled = httpsEnabled;
-    }
-
-    public List<String> getHosts() {
-        return hosts;
-    }
-
-    public void setHosts(List<String> hosts) {
-        this.hosts = hosts;
-    }
-
-    public int getConnectionsPerThread() {
-        return connectionsPerThread;
-    }
-
-    public void setConnectionsPerThread(int connectionsPerThread) {
-        this.connectionsPerThread = connectionsPerThread;
     }
 
     public int getMaxRequestTime() {
@@ -96,4 +68,12 @@ public class ProxyConfig {
     public int getMaxConnectionRetries() { return maxConnectionRetries; }
 
     public void setMaxConnectionRetries(int maxConnectionRetries) { this.maxConnectionRetries = maxConnectionRetries; }
+
+    public String[] getHostWhitelist() {
+        return hostWhitelist;
+    }
+
+    public void setHostWhitelist(String[] hostWhitelist) {
+        this.hostWhitelist = hostWhitelist;
+    }
 }

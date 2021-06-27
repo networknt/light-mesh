@@ -16,8 +16,8 @@
 
 package com.networknt.proxy;
 
+import com.networknt.TestServer;
 import com.networknt.client.Http2Client;
-import com.networknt.config.Config;
 import com.networknt.exception.ClientException;
 import com.networknt.utility.StringUtils;
 import io.undertow.Undertow;
@@ -41,7 +41,6 @@ import java.io.InputStream;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
@@ -55,10 +54,7 @@ public class SidecarProxyTest {
     public static TestServer server = TestServer.getInstance();
 
     static final boolean enableHttp2 = server.getServerConfig().isEnableHttp2();
-    static final boolean enableHttps = server.getServerConfig().isEnableHttps();
-    static final int httpPort = server.getServerConfig().getHttpPort();
-    static final int httpsPort = server.getServerConfig().getHttpsPort();
-    static final String url = enableHttp2 || enableHttps ? "https://localhost:" + httpsPort : "http://localhost:" + httpPort;
+    static final String url = "https://localhost:8443";
 
     @BeforeClass
     public static void setUp() {
@@ -132,7 +128,7 @@ public class SidecarProxyTest {
         final CountDownLatch latch = new CountDownLatch(10);
         final ClientConnection connection;
         try {
-            connection = client.connect(new URI(url), Http2Client.WORKER, Http2Client.SSL, Http2Client.BUFFER_POOL, enableHttp2 ? OptionMap.create(UndertowOptions.ENABLE_HTTP2, true): OptionMap.EMPTY).get();
+            connection = client.connect(new URI(url), Http2Client.WORKER, Http2Client.getInstance().getDefaultXnioSsl(), Http2Client.BUFFER_POOL, enableHttp2 ? OptionMap.create(UndertowOptions.ENABLE_HTTP2, true): OptionMap.EMPTY).get();
         } catch (Exception e) {
             throw new ClientException(e);
         }
@@ -159,11 +155,11 @@ public class SidecarProxyTest {
             IoUtils.safeClose(connection);
         }
         for (final AtomicReference<ClientResponse> reference : references) {
-            Assert.assertTrue(reference.get().getAttachment(Http2Client.RESPONSE_BODY).contains("{\"backend\":\"OK\"}"));
             System.out.println(reference.get().getAttachment(Http2Client.RESPONSE_BODY));
+            Assert.assertTrue(reference.get().getAttachment(Http2Client.RESPONSE_BODY).contains("{\"backend\":\"OK\"}"));
         }
     }
-
+    @Ignore
     @Test
     public void testPost() throws Exception {
         final Http2Client client = Http2Client.getInstance();
