@@ -8,8 +8,7 @@ http2Enabled: false
 httpsEnabled: false
 
 # Target URIs
-hosts:
-  - http://localhost:${proxy.containerPort:}
+hosts: http://localhost:${proxy.containerPort:}
 
 # Connections per thread to the target servers
 connectionsPerThread: 20

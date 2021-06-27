@@ -26,10 +26,3 @@ paths:
             responses:
                 default:
                     description: Default response
-    /v2/address:
-        get:
-            description: Return a JSON object
-            operationId: getAddress
-            responses:
-                default:
-                    description: Default response

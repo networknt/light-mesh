@@ -72,7 +72,6 @@ public class RouterHttpTest extends BaseRouterTest{
         }
     }
 
-    @Ignore
     @Test
     public void testGet() throws Exception {
         final Http2Client client = Http2Client.getInstance();
@@ -94,6 +93,7 @@ public class RouterHttpTest extends BaseRouterTest{
                         references.add(i, reference);
                         final ClientRequest request = new ClientRequest().setMethod(Methods.GET).setPath("/v2/address");
                         request.getRequestHeaders().put(HttpStringConstants.SERVICE_ID, "com.networknt.test-1.0.0");
+                        request.getRequestHeaders().put(Headers.HOST, "localhost");
                         connection.sendRequest(request, client.createClientCallback(reference, latch));
                     }
                 }
