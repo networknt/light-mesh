@@ -123,6 +123,7 @@ public class SidecarProxyTest {
                 }
             });
 
+    @Ignore
     @Test
     public void testGet() throws Exception {
         final Http2Client client = Http2Client.getInstance();
@@ -221,7 +222,7 @@ public class SidecarProxyTest {
             }
             System.out.println(reference.get().getAttachment(Http2Client.RESPONSE_BODY));
             Assert.assertTrue(reference.get().getAttachment(Http2Client.RESPONSE_BODY).contains("{\"backend\":\"OK\"}"));
-            Thread.sleep(60000);
+            Thread.sleep(6000);
         }
     }
 

@@ -53,11 +53,11 @@ public class BaseRouterTest {
     public static Map<String, Object> secret = DecryptUtil.decryptMap(Config.getInstance().getJsonMapConfig(CONFIG_SECRET));
     static SSLContext sslContext = createSSLContext();
 
-    public static final boolean enableHttp2 = server.getServerConfig().isEnableHttp2();
-    public  static final boolean enableHttps = server.getServerConfig().isEnableHttps();
+    public  static final boolean enableHttp = server.getServerConfig().isEnableHttp();
+    public static final boolean enableHttp2 = enableHttp? false : server.getServerConfig().isEnableHttp2();
     public static final int httpPort = server.getServerConfig().getHttpPort();
     public static final int httpsPort = server.getServerConfig().getHttpsPort();
-    public String url = "https://localhost:8443";
+    public static final String url = enableHttp ? "http://localhost:" + httpPort : "https://localhost:" + httpsPort;
 
     @BeforeClass
     public static void setUp() {
