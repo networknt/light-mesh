@@ -72,6 +72,7 @@ public class RouterHttpTest extends BaseRouterTest{
         }
     }
 
+    @Ignore
     @Test
     public void testGet() throws Exception {
         final Http2Client client = Http2Client.getInstance();

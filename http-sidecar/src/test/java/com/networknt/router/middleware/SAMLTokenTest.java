@@ -17,7 +17,6 @@
 package com.networknt.router.middleware;
 
 import com.networknt.client.Http2Client;
-import com.networknt.client.oauth.OauthHelper;
 import com.networknt.exception.ClientException;
 import com.networknt.httpstring.HttpStringConstants;
 import com.networknt.router.BaseRouterTest;
@@ -29,8 +28,6 @@ import io.undertow.util.Headers;
 import io.undertow.util.HttpString;
 import io.undertow.util.Methods;
 import org.junit.*;
-import org.mockito.MockedStatic;
-import org.mockito.Mockito;
 import org.xnio.IoUtils;
 import org.xnio.OptionMap;
 
@@ -52,12 +49,6 @@ public class SAMLTokenTest extends BaseRouterTest {
         final Http2Client client = Http2Client.getInstance();
         final CountDownLatch latch = new CountDownLatch(10);
         final ClientConnection connection;
-
-        try (MockedStatic<OauthHelper> oauthHelperMockedStatic = Mockito.mockStatic(OauthHelper.class)) {
-           // oauthHelperMockedStatic.when(OauthHelper::getTokenFromSamlResult).thenReturn("Eugen");
-//            assertThat(StaticUtils.name()).isEqualTo("Eugen");
-        }
-
 
         try {
             connection = client.connect(new URI(url), Http2Client.WORKER, Http2Client.BUFFER_POOL, enableHttp2 ? OptionMap.create(UndertowOptions.ENABLE_HTTP2, true): OptionMap.EMPTY).get();
