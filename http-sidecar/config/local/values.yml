@@ -1,34 +1,38 @@
-# Handler middleware chain configuration
----
-enabled: true
+# Singleton service factory configuration/IoC injection
+service.singletons:
+  - com.networknt.registry.URL:
+      - com.networknt.registry.URLImpl:
+          protocol: https
+          host: localhost
+          port: 8080
+          path: direct
+          parameters:
+            com.networknt.petstore-1.0.0: https://localhost:8443
+  - com.networknt.registry.Registry:
+      - com.networknt.registry.support.DirectRegistry
+  - com.networknt.balance.LoadBalance:
+      - com.networknt.balance.RoundRobinLoadBalance
+  - com.networknt.cluster.Cluster:
+      - com.networknt.cluster.LightCluster
 
-#------------------------------------------------------------------------------
-# Support individual handler chains for each separate endpoint. It allows framework
-# handlers like health check, server info to bypass majority of the middleware handlers
-# and allows mixing multiple frameworks like OpenAPI and GraphQL in the same instance.
-#
-# handlers  --  list of handlers to be used across chains in this microservice
-#               including the routing handlers for ALL endpoints
-#           --  format: fully qualified handler class name@optional:given name
-# chains    --  allows forming of [1..N] chains, which could be wholly or
-#               used to form handler chains for each endpoint
-#               ex.: default chain below, reused partially across multiple endpoints
-# paths     --  list all the paths to be used for routing within the microservice
-#           ----  path: the URI for the endpoint (ex.: path: '/v1/pets')
-#           ----  method: the operation in use (ex.: 'post')
-#           ----  exec: handlers to be executed -- this element forms the list and
-#                       the order of execution for the handlers
-#
-# IMPORTANT NOTES:
-# - to avoid executing a handler, it has to be removed/commented out in the chain
-#   or change the enabled:boolean to false for a middleware handler configuration.
-# - all handlers, routing handler included, are to be listed in the execution chain
-# - for consistency, give a name to each handler; it is easier to refer to a name
-#   vs a fully qualified class name and is more elegant
-# - you can list in chains the fully qualified handler class names, and avoid using the
-#   handlers element altogether
-#------------------------------------------------------------------------------
-handlers:
+
+serviceDict.mapping:
+  /v1/pets@get: com.networknt.petstore-1.0.0
+  /v2/address@get: party.address-2.0.0
+  /v1/contact@post: party.contact-1.0.0
+
+server.httpPort: 9080
+server.httpsPort: 9445
+server.serviceId: light-mesh-1.0.0
+
+## proxy yaml
+proxy.hosts: http://localhost:8080
+
+
+## handler yaml
+handler.enabled: true
+
+handler.handlers:
   # Light-framework cross-cutting concerns implemented in the microservice
   - com.networknt.exception.ExceptionHandler@exception
   # - com.networknt.metrics.MetricsHandler@metrics
@@ -58,7 +62,7 @@ handlers:
   - com.networknt.info.ServerInfoGetHandler@info
   # - com.networknt.metrics.prometheus.PrometheusGetHandler@getprometheus
 
-chains:
+handler.chains:
   default:
     - exception
     # - metrics
@@ -66,7 +70,7 @@ chains:
     - correlation
     # - cors
     - header
-   # - saml
+    # - saml
     - path
     - router
     - specification
@@ -77,7 +81,7 @@ chains:
     - validator
     - proxy
 
-paths:
+handler.paths:
   - path: '/*'
     method: 'get'
     exec:
@@ -109,3 +113,6 @@ paths:
     method: 'get'
     exec:
       - proxyServerInfo
+
+##handler.basePath: /v1
+
