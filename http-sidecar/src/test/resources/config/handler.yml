@@ -36,7 +36,7 @@ handlers:
   - com.networknt.correlation.CorrelationHandler@correlation
   # Cors handler to handler post/put pre-flight. It is not used in the sidecar but only in the router.
   # - com.networknt.cors.CorsHttpHandler@cors
-  #- com.networknt.openapi.OpenApiHandler@specification
+  - com.networknt.openapi.OpenApiHandler@specification
   - com.networknt.openapi.JwtVerifyHandler@security
   - com.networknt.body.ProxyBodyHandler@body
   # - com.networknt.audit.AuditHandler@audit
@@ -69,7 +69,7 @@ chains:
    # - saml
     - path
     - router
-   # - specification
+    - specification
     - security
     - body
     #- audit
