@@ -44,6 +44,17 @@ public class TestServer extends ExternalResource {
         return Server.getServerConfig();
     }
 
+    public void restartServer() {
+        try {
+            if (refCount.get() == 0) {
+                Server.start();
+            }
+        }
+        finally {
+            refCount.getAndIncrement();
+        }
+    }
+
     @Override
     protected void before() {
         try {

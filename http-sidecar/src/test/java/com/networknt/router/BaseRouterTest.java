@@ -78,7 +78,6 @@ public class BaseRouterTest {
             server1 = builder1.build();
             server1.start();
         }
-
     }
 
     @AfterClass
