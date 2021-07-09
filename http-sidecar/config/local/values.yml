@@ -1,20 +1,3 @@
-# Singleton service factory configuration/IoC injection
-service.singletons:
-  - com.networknt.registry.URL:
-      - com.networknt.registry.URLImpl:
-          protocol: https
-          host: localhost
-          port: 8080
-          path: direct
-          parameters:
-            com.networknt.petstore-1.0.0: https://localhost:8443
-  - com.networknt.registry.Registry:
-      - com.networknt.registry.support.DirectRegistry
-  - com.networknt.balance.LoadBalance:
-      - com.networknt.balance.RoundRobinLoadBalance
-  - com.networknt.cluster.Cluster:
-      - com.networknt.cluster.LightCluster
-
 
 serviceDict.mapping:
   /v1/pets@get: com.networknt.petstore-1.0.0
@@ -26,7 +9,7 @@ server.httpsPort: 9445
 server.serviceId: light-mesh-1.0.0
 
 ## proxy yaml
-proxy.hosts: http://localhost:8080
+proxy.containerPort: '8080'
 
 
 ## handler yaml
