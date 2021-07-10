@@ -45,7 +45,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
 
-@Ignore
+
 public class SidecarProxyTest {
     static final Logger logger = LoggerFactory.getLogger(SidecarProxyTest.class);
 
@@ -123,7 +123,7 @@ public class SidecarProxyTest {
                 }
             });
 
-    @Ignore
+
     @Test
     public void testGet() throws Exception {
         final Http2Client client = Http2Client.getInstance();
@@ -161,7 +161,7 @@ public class SidecarProxyTest {
             Assert.assertTrue(reference.get().getAttachment(Http2Client.RESPONSE_BODY).contains("{\"backend\":\"OK\"}"));
         }
     }
-    @Ignore
+
     @Test
     public void testPost() throws Exception {
         final Http2Client client = Http2Client.getInstance();
