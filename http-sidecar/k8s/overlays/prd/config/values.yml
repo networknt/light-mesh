@@ -1,4 +1,0 @@
-# customize other configuration files packaged in the container with the following properties.
-
-# The server environment tag
-server.environment: prd-mesh
