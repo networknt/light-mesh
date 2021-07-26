@@ -32,7 +32,6 @@
     </licenses>
 
     <modules>
-        <module>http-sidecar</module>
         <module>kafka-sidecar</module>
     </modules>
 
