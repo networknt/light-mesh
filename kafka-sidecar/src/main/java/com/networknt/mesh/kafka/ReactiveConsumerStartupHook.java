@@ -5,7 +5,6 @@ import com.networknt.config.Config;
 import com.networknt.config.JsonMapper;
 import com.networknt.exception.FrameworkException;
 import com.networknt.kafka.common.KafkaConsumerConfig;
-import com.networknt.kafka.common.KafkaProducerConfig;
 import com.networknt.kafka.consumer.*;
 import com.networknt.kafka.entity.*;
 import com.networknt.server.Server;
@@ -36,10 +35,10 @@ import static java.util.concurrent.Executors.newSingleThreadExecutor;
 
 public class ReactiveConsumerStartupHook implements StartupHookProvider {
     private static Logger logger = LoggerFactory.getLogger(ReactiveConsumerStartupHook.class);
-    static private KafkaConsumerConfig config = (KafkaConsumerConfig) Config.getInstance().getJsonObjectConfig(KafkaConsumerConfig.CONFIG_NAME, KafkaConsumerConfig.class);
+    public static KafkaConsumerConfig config = (KafkaConsumerConfig) Config.getInstance().getJsonObjectConfig(KafkaConsumerConfig.CONFIG_NAME, KafkaConsumerConfig.class);
     public static KafkaConsumerManager kafkaConsumerManager;
-    static Http2Client client = Http2Client.getInstance();
-    static private ClientConnection connection;
+    public static Http2Client client = Http2Client.getInstance();
+    public static ClientConnection connection;
     static private ExecutorService executor = newSingleThreadExecutor();
     long timeoutMs = -1;
     long maxBytes = -1;
