@@ -56,7 +56,7 @@ handlers:
   # Customer business domain specific cross-cutting concerns handlers
   # - com.example.validator.CustomizedValidator@custvalidator
   # Framework endpoint handlers
-  - com.networknt.health.HealthGetHandler@health
+  - com.networknt.mesh.kafka.handler.SidecarHealthHandler@health
   - com.networknt.info.ServerInfoGetHandler@info
   - com.networknt.logging.handler.LoggerGetHandler@getLogger
   - com.networknt.logging.handler.LoggerPostHandler@postLogger
